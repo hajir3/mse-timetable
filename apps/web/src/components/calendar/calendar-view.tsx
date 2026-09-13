@@ -51,7 +51,7 @@ export function CalendarView() {
     view === "month"
       ? format(date, "MMMM yyyy")
       : view === "day"
-        ? format(date, "EEEE, d MMMM yyyy")
+        ? format(date, "EEEE, d. MMMM yyyy")
         : currentWeek
           ? `Week ${currentWeek.weekNumber}`
           : `${format(startOfWeek(date, { weekStartsOn: 1 }), "MMM d")} – ${format(addDays(startOfWeek(date, { weekStartsOn: 1 }), 4), "MMM d, yyyy")}`;
