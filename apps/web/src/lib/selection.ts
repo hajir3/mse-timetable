@@ -13,6 +13,7 @@ import { SelectedModulesSchema, type SelectedModules } from "@mse-timetable/shar
 export function useSelectedModules() {
   const { user, isLoaded } = useUser();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedModules: SelectedModules = useMemo(() => {
     if (!user) return {};
@@ -24,9 +25,16 @@ export function useSelectedModules() {
     async (semesterKey: string, moduleCodes: string[]) => {
       if (!user) return;
       setSaving(true);
+      setError(null);
       try {
         const next: SelectedModules = { ...selectedModules, [semesterKey]: moduleCodes };
-        await user.update({ unsafeMetadata: { ...user.unsafeMetadata, selectedModules: next } });
+        // user.update({ unsafeMetadata }) is deprecated in this Clerk version
+        // (Core 3) in favor of updateMetadata, which deep-merges — we still
+        // compute the full merged value ourselves for predictability.
+        await user.updateMetadata({ unsafeMetadata: { selectedModules: next } });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save your selection.");
+        throw err;
       } finally {
         setSaving(false);
       }
@@ -34,5 +42,5 @@ export function useSelectedModules() {
     [user, selectedModules],
   );
 
-  return { isLoaded, saving, selectedModules, save };
+  return { isLoaded, saving, error, selectedModules, save };
 }

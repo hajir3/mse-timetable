@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Calendar, dateFnsLocalizer, type Event as RBCEvent } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, type Event as RBCEvent, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, parseISO } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -44,6 +44,18 @@ export function CalendarView() {
   const [semesterKey, setSemesterKey] = useState(getInitialSemesterKey);
   const modulesByCode = useMemo(() => new Map(dataset.modules.map((m) => [m.code, m])), []);
   const semester = dataset.semesters.find((s) => s.key === semesterKey) ?? dataset.semesters[0];
+
+  // react-big-calendar's own uncontrolled view/date state (defaultView /
+  // defaultDate) doesn't reliably update in this React 19 / Next.js 16 dev
+  // setup — the Toolbar's Month/Week/Day and Back/Next clicks silently no-op.
+  // Controlling both explicitly sidesteps that entirely.
+  const [view, setView] = useState<View>("month");
+  const [date, setDate] = useState<Date>(() => parseISO(semester.start));
+  const [dateInitializedFor, setDateInitializedFor] = useState(semesterKey);
+  if (dateInitializedFor !== semesterKey) {
+    setDateInitializedFor(semesterKey);
+    setDate(parseISO(semester.start));
+  }
 
   const events = useMemo<CalEvent[]>(() => {
     const selected = new Set(selectedModules[semesterKey] ?? []);
@@ -101,14 +113,19 @@ export function CalendarView() {
           ))}
         </TabsList>
       </Tabs>
-      <div className="min-h-[600px] flex-1 rounded-md border bg-background p-2">
+      <div className="rounded-md border bg-background p-2">
         <Calendar
           localizer={localizer}
           events={events}
           views={["month", "week", "day"]}
-          defaultView="month"
-          defaultDate={parseISO(semester.start)}
-          style={{ height: "100%" }}
+          view={view}
+          onView={setView}
+          date={date}
+          onNavigate={setDate}
+          // A percentage height here can collapse to ~0 depending on how
+          // many flex layers are above it (a well-known react-big-calendar
+          // gotcha) — an explicit viewport-relative height sidesteps that.
+          style={{ height: "calc(100vh - 220px)" }}
           eventPropGetter={(event) => ({
             style: { backgroundColor: EVENT_COLORS[(event as CalEvent).kind] },
           })}

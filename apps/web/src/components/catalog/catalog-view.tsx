@@ -28,7 +28,7 @@ function getInitialSemesterKey(): string {
 }
 
 export function CatalogView() {
-  const { isLoaded, selectedModules, save, saving } = useSelectedModules();
+  const { isLoaded, selectedModules, save, saving, error: saveError } = useSelectedModules();
   const [semesterKey, setSemesterKey] = useState(getInitialSemesterKey);
   const [search, setSearch] = useState("");
   const [profile, setProfile] = useState(ALL);
@@ -179,13 +179,23 @@ export function CatalogView() {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 flex items-center justify-between gap-4 border-t bg-background/95 p-3 backdrop-blur">
-        <span className="text-sm text-muted-foreground">
-          {localSelection.length} module{localSelection.length === 1 ? "" : "s"} selected
-        </span>
-        <Button disabled={!dirty || saving} onClick={() => save(semesterKey, localSelection)}>
-          {saving ? "Saving..." : dirty ? "Save changes" : "Saved"}
-        </Button>
+      <div className="fixed inset-x-0 bottom-0 flex flex-col gap-1 border-t bg-background/95 p-3 backdrop-blur">
+        {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-muted-foreground">
+            {localSelection.length} module{localSelection.length === 1 ? "" : "s"} selected
+          </span>
+          <Button
+            disabled={!dirty || saving}
+            onClick={() => {
+              save(semesterKey, localSelection).catch(() => {
+                // surfaced via saveError above
+              });
+            }}
+          >
+            {saving ? "Saving..." : dirty ? "Save changes" : "Saved"}
+          </Button>
+        </div>
       </div>
     </div>
   );
