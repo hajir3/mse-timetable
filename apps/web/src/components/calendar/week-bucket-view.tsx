@@ -115,19 +115,23 @@ export function WeekBucketView({
                   .map(([, card]) => card);
                 return (
                   <div key={`${bucket}-${i}`} className="min-h-20 bg-background p-1 portrait:min-h-16">
+                    {/* flex-1 on each card: a single card fills the entire
+                        section height (matching the tallest cell in this
+                        row, since grid items stretch by default); multiple
+                        cards in the same cell split it evenly instead. */}
                     <div className="flex h-full flex-col gap-1">
                       {cards.map((card) => (
                         <div
                           key={card.moduleCode}
                           className={cn(
-                            "rounded-sm px-2 py-1.5 text-sm font-medium text-white",
+                            "flex flex-1 flex-col items-center justify-center rounded-sm px-2 py-1.5 text-center text-sm font-medium text-white",
                             "portrait:px-1.5 portrait:py-1 portrait:text-xs",
                             classForModuleCode(card.moduleCode),
                           )}
                         >
                           {card.moduleCode}
                           {card.hasRoomException && (
-                            <span className="block text-xs font-normal opacity-90 portrait:text-[10px]">room change</span>
+                            <span className="text-xs font-normal opacity-90 portrait:text-[10px]">room change</span>
                           )}
                         </div>
                       ))}
