@@ -33,6 +33,39 @@ const EVENT_COLORS: Record<CalEvent["kind"], string> = {
   "special-date": "#d97706",
 };
 
+// 24h time everywhere, no AM/PM (uses the localizer's own date-fns format).
+const FORMATS = {
+  timeGutterFormat: "HH:mm",
+  eventTimeRangeFormat: (
+    { start, end }: { start: Date; end: Date },
+    culture?: string,
+    loc?: { format: (d: Date, f: string, c?: string) => string },
+  ) => `${loc?.format(start, "HH:mm", culture)}–${loc?.format(end, "HH:mm", culture)}`,
+};
+
+// The week/day time grid is trimmed to the earliest start / latest end across
+// every session in the dataset (not just the user's own selection, so the
+// range doesn't jump around as their selection changes), rounded out to the
+// nearest hour.
+function computeTimeBounds() {
+  let minMinutes = Infinity;
+  let maxMinutes = -Infinity;
+  for (const s of dataset.sessions) {
+    const [sh, sm] = s.start.split(":").map(Number);
+    const [eh, em] = s.end.split(":").map(Number);
+    minMinutes = Math.min(minMinutes, sh * 60 + sm);
+    maxMinutes = Math.max(maxMinutes, eh * 60 + em);
+  }
+  if (!Number.isFinite(minMinutes)) {
+    minMinutes = 8 * 60;
+    maxMinutes = 18 * 60;
+  }
+  const minHour = Math.floor(minMinutes / 60);
+  const maxHour = Math.ceil(maxMinutes / 60);
+  return { min: new Date(0, 0, 0, minHour, 0), max: new Date(0, 0, 0, maxHour, 0) };
+}
+const TIME_BOUNDS = computeTimeBounds();
+
 function getInitialSemesterKey(): string {
   const now = new Date().toISOString().slice(0, 10);
   const current = dataset.semesters.find((s) => now >= s.start && now <= s.end);
@@ -42,7 +75,6 @@ function getInitialSemesterKey(): string {
 export function CalendarView() {
   const { selectedModules } = useSelectedModules();
   const [semesterKey, setSemesterKey] = useState(getInitialSemesterKey);
-  const modulesByCode = useMemo(() => new Map(dataset.modules.map((m) => [m.code, m])), []);
   const semester = dataset.semesters.find((s) => s.key === semesterKey) ?? dataset.semesters[0];
 
   // react-big-calendar's own uncontrolled view/date state (defaultView /
@@ -63,10 +95,9 @@ export function CalendarView() {
 
     for (const s of dataset.sessions) {
       if (s.semester !== semesterKey || !selected.has(s.moduleCode)) continue
-      const mod = modulesByCode.get(s.moduleCode);
       out.push({
         kind: "session",
-        title: `${mod?.title ?? s.moduleCode} — ${s.lessonType}${s.isRoomException ? " (room change)" : ""}`,
+        title: `${s.moduleCode} — ${s.lessonType}${s.isRoomException ? " (room change)" : ""}`,
         start: parse(`${s.date} ${s.start}`, "yyyy-MM-dd HH:mm", new Date()),
         end: parse(`${s.date} ${s.end}`, "yyyy-MM-dd HH:mm", new Date()),
         resource: s,
@@ -100,7 +131,7 @@ export function CalendarView() {
     }
 
     return out;
-  }, [semesterKey, selectedModules, modulesByCode, semester]);
+  }, [semesterKey, selectedModules, semester]);
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
@@ -117,11 +148,19 @@ export function CalendarView() {
         <Calendar
           localizer={localizer}
           events={events}
-          views={["month", "week", "day"]}
+          // "work_week" (Mon-Fri only) instead of "week" (Mon-Sun) — no
+          // module ever meets on a weekend in this data, and unlike month
+          // view, react-big-calendar's work_week is a first-class 5-day
+          // view rather than something that has to be faked with CSS.
+          views={["month", "work_week", "day"]}
+          messages={{ work_week: "Week" }}
           view={view}
           onView={setView}
           date={date}
           onNavigate={setDate}
+          min={TIME_BOUNDS.min}
+          max={TIME_BOUNDS.max}
+          formats={FORMATS}
           // A percentage height here can collapse to ~0 depending on how
           // many flex layers are above it (a well-known react-big-calendar
           // gotcha) — an explicit viewport-relative height sidesteps that.
