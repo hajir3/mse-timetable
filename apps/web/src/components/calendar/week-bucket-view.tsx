@@ -80,57 +80,71 @@ export function WeekBucketView({
         </div>
       )}
 
-      <div className="grid grid-cols-[80px_repeat(5,1fr)] gap-px overflow-hidden rounded-md border bg-border">
-        <div className="bg-background" />
-        {weekDates.map((d, i) => (
-          <div key={i} className="bg-background p-2 text-center text-sm font-semibold">
-            {format(d, "EEEE")}
-            <div className="text-xs font-normal text-muted-foreground">{format(d, "MMM d")}</div>
-          </div>
-        ))}
-
-        {TIME_OF_DAY_ROWS.map((bucket) => (
-          <Fragment key={bucket}>
-            <div
-              key={`${bucket}-label`}
-              className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground"
-            >
-              {TIME_OF_DAY_LABELS[bucket]}
+      {/* Same weekday-columns/time-of-day-rows grid in both orientations —
+          portrait doesn't transpose it (a week grid isn't a month grid; the
+          rows aren't naturally "vertical days" the way month weeks are, and
+          a transpose read worse in practice). Instead portrait shrinks
+          padding/text and abbreviates weekday names, and the grid enforces
+          a minimum per-day-column width so text never gets squished below
+          legibility — the outer overflow-x-auto lets a narrow phone scroll
+          sideways through the remaining days instead. */}
+      <div className="overflow-x-auto rounded-md border">
+        <div className="grid grid-cols-[80px_repeat(5,1fr)] gap-px bg-border portrait:grid-cols-[52px_repeat(5,minmax(92px,1fr))]">
+          <div className="bg-background" />
+          {weekDates.map((d, i) => (
+            <div key={i} className="bg-background p-2 text-center text-sm font-semibold portrait:p-1.5 portrait:text-xs">
+              <span className="portrait:hidden">{format(d, "EEEE")}</span>
+              <span className="hidden portrait:inline">{format(d, "EEE")}</span>
+              <div className="text-xs font-normal text-muted-foreground portrait:text-[10px]">{format(d, "MMM d")}</div>
             </div>
-            {weekDates.map((d, i) => {
-              const dateStr = format(d, "yyyy-MM-dd");
-              const cards = [...cardsByKey.entries()]
-                .filter(([key]) => key.startsWith(`${dateStr}|${bucket}|`))
-                .map(([, card]) => card);
-              return (
-                <div key={`${bucket}-${i}`} className="min-h-20 bg-background p-1">
-                  <div className="flex h-full flex-col gap-1">
-                    {cards.map((card) => (
-                      <div
-                        key={card.moduleCode}
-                        className={cn(
-                          "rounded-sm px-2 py-1.5 text-sm font-medium text-white",
-                          "bg-blue-600",
-                        )}
-                      >
-                        {card.moduleCode}
-                        {card.hasRoomException && <span className="block text-xs font-normal opacity-90">room change</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </Fragment>
-        ))}
+          ))}
 
-        {/* Always-empty "Block" row — see the file-level comment above.
-            Spans all 5 day columns as one cell, matching the official
-            tool's layout for a row that isn't really per-weekday. */}
-        <div className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground">
-          Block
+          {TIME_OF_DAY_ROWS.map((bucket) => (
+            <Fragment key={bucket}>
+              <div
+                key={`${bucket}-label`}
+                className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground portrait:p-1 portrait:text-[10px]"
+              >
+                {TIME_OF_DAY_LABELS[bucket]}
+              </div>
+              {weekDates.map((d, i) => {
+                const dateStr = format(d, "yyyy-MM-dd");
+                const cards = [...cardsByKey.entries()]
+                  .filter(([key]) => key.startsWith(`${dateStr}|${bucket}|`))
+                  .map(([, card]) => card);
+                return (
+                  <div key={`${bucket}-${i}`} className="min-h-20 bg-background p-1 portrait:min-h-16">
+                    <div className="flex h-full flex-col gap-1">
+                      {cards.map((card) => (
+                        <div
+                          key={card.moduleCode}
+                          className={cn(
+                            "rounded-sm px-2 py-1.5 text-sm font-medium text-white",
+                            "portrait:px-1.5 portrait:py-1 portrait:text-xs",
+                            "bg-blue-600",
+                          )}
+                        >
+                          {card.moduleCode}
+                          {card.hasRoomException && (
+                            <span className="block text-xs font-normal opacity-90 portrait:text-[10px]">room change</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </Fragment>
+          ))}
+
+          {/* Always-empty "Block" row — see the file-level comment above.
+              Spans all 5 day columns as one cell, matching the official
+              tool's layout for a row that isn't really per-weekday. */}
+          <div className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground portrait:p-1 portrait:text-[10px]">
+            Block
+          </div>
+          <div className="col-span-5 min-h-12 bg-background p-1" />
         </div>
-        <div className="col-span-5 min-h-12 bg-background p-1" />
       </div>
     </div>
   );
