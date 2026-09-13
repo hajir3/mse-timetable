@@ -59,7 +59,7 @@ export function CalendarView() {
           before). Portrait: too cramped for that — stack the three groups
           vertically instead, each centered. */}
       <div className="flex flex-col items-center gap-2 landscape:flex-row landscape:items-center landscape:justify-between landscape:gap-0">
-        <div className="order-1 flex gap-1">
+        <div className="order-2 flex gap-1 landscape:order-1">
           <Button variant="outline" size="sm" onClick={() => setDate(new Date())}>
             Today
           </Button>
@@ -80,11 +80,11 @@ export function CalendarView() {
             Next
           </Button>
         </div>
-        {/* In portrait this sits right above the calendar grid (order-3);
-            in landscape it's back in the middle, between nav and switcher,
-            matching the original single-row layout (order-2). */}
-        <p className="order-3 text-sm font-medium landscape:order-2">{title}</p>
-        <div className="order-2 flex gap-1 rounded-md bg-muted p-0.5 landscape:order-3">
+        {/* In portrait this is the topmost group; in landscape it's back in
+            the middle, between nav and switcher, matching the original
+            single-row layout (order-2). */}
+        <p className="order-1 text-sm font-medium landscape:order-2">{title}</p>
+        <div className="order-3 flex gap-1 rounded-md bg-muted p-0.5">
           {(["month", "work_week", "day"] as const).map((v) => (
             <button
               key={v}
