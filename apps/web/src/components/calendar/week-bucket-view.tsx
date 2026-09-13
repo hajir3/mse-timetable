@@ -5,7 +5,8 @@ import { addDays, format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { dataset } from "@/lib/dataset";
 import { classForModuleCode } from "@/lib/module-colors";
-import type { Session, WeekTag } from "@mse-timetable/shared";
+import { aggregateByDayAndBucket, type AggregatedCard } from "@/lib/aggregate-sessions";
+import type { WeekTag } from "@mse-timetable/shared";
 
 /**
  * Mirrors the official ZHAW MSE module-selection tool's week view: a fixed
@@ -43,44 +44,7 @@ const TIME_OF_DAY_LABELS: Record<(typeof TIME_OF_DAY_ROWS)[number], string> = {
 
 const BANNER_TAGS = new Set<WeekTag>(["holiday", "lecture-free", "exam-regular", "exam-resit", "viewing-session"]);
 
-interface CourseCard {
-  moduleCode: string;
-  hasRoomException: boolean;
-  start: string;
-  end: string;
-  room: string;
-  mode: "on-site" | "online";
-}
-
-// Merges a module's lecture/tutorial parts within the same day+bucket into
-// one card — start/end widen to cover all of them (usually back-to-back),
-// room/mode are taken from whichever part is seen first (they're the same
-// across parts in this data except for the rare room-change case, which
-// `hasRoomException` still flags).
-function aggregateByDayAndBucket(sessions: Session[]): Map<string, CourseCard> {
-  const byKey = new Map<string, CourseCard>();
-  for (const s of sessions) {
-    const key = `${s.date}|${s.timeOfDay}|${s.moduleCode}`;
-    const existing = byKey.get(key);
-    if (existing) {
-      existing.hasRoomException = existing.hasRoomException || s.isRoomException;
-      if (s.start < existing.start) existing.start = s.start;
-      if (s.end > existing.end) existing.end = s.end;
-    } else {
-      byKey.set(key, {
-        moduleCode: s.moduleCode,
-        hasRoomException: s.isRoomException,
-        start: s.start,
-        end: s.end,
-        room: s.room,
-        mode: s.mode,
-      });
-    }
-  }
-  return byKey;
-}
-
-function CourseCardView({ card, compact }: { card: CourseCard; compact: boolean }) {
+function CourseCardView({ card, compact }: { card: AggregatedCard; compact: boolean }) {
   return (
     <div
       className={cn(

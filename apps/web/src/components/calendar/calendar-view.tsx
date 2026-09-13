@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { WeekBucketView } from "./week-bucket-view";
 import { MonthGridView } from "./month-grid-view";
 import { DayAgendaView } from "./day-agenda-view";
+import { SubscribeCalendarButton } from "./subscribe-calendar-button";
 
 // Month, Week, and Day are all custom-built views (see month-grid-view.tsx,
 // week-bucket-view.tsx, day-agenda-view.tsx) — nothing here depends on
@@ -22,7 +23,7 @@ function getInitialSemesterKey(): string {
   return (current ?? dataset.semesters[0]).key;
 }
 
-export function CalendarView() {
+export function CalendarView({ subscribeUrl }: { subscribeUrl: string | null }) {
   const { selectedModules } = useSelectedModules();
   const [semesterKey, setSemesterKey] = useState(getInitialSemesterKey);
   const semester = dataset.semesters.find((s) => s.key === semesterKey) ?? dataset.semesters[0];
@@ -58,15 +59,18 @@ export function CalendarView() {
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
-      <Tabs value={semesterKey} onValueChange={(v) => setSemesterKey(v as string)}>
-        <TabsList>
-          {dataset.semesters.map((s) => (
-            <TabsTrigger key={s.key} value={s.key}>
-              {s.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div className="flex items-center justify-between gap-2">
+        <Tabs value={semesterKey} onValueChange={(v) => setSemesterKey(v as string)}>
+          <TabsList>
+            {dataset.semesters.map((s) => (
+              <TabsTrigger key={s.key} value={s.key}>
+                {s.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        {subscribeUrl && <SubscribeCalendarButton url={subscribeUrl} />}
+      </div>
 
       {/* Landscape: one row, three groups spaced with justify-between (as
           before). Portrait: too cramped for that — stack the three groups

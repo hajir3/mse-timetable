@@ -230,6 +230,15 @@ and redeploys on every push to `main`, this is the *entire* update mechanism
   allows that association — otherwise shown as a general "exam period"
   banner).
 - FR15: All times displayed in Europe/Zurich local time, 24-hour format.
+- FR16: Calendar export — a "Subscribe" button on the calendar page gives
+  the signed-in user a personal, unauthenticated ICS feed URL
+  (`/api/calendar/[userId]/[signature]`) they add once to Google
+  Calendar/Outlook/Apple Calendar; those apps then poll it on their own
+  schedule (typically every few hours) and pick up changes to the user's
+  module selection automatically, with no re-export needed. One VEVENT per
+  aggregated course block — the same merged blocks the week view renders,
+  not one event per raw lecture/tutorial row. See §8.10 for why this is a
+  signed feed URL rather than a live OAuth push into the user's calendar.
 
 ## 7. Data model (shape of the generated static dataset + Clerk account data — not database tables)
 
@@ -346,6 +355,28 @@ reviewing it — the simplification is what's recorded below.
    extra to configure: no GitHub Actions workflow, no repo secrets, no
    database migration to run. "Who can update the data" is just "who has
    push access to the repo."
+10. **Calendar export — a signed ICS subscription feed, not OAuth push into
+    Google/Outlook.** Considered writing events directly into a user's
+    Google Calendar/Outlook via their own APIs (Google Calendar API,
+    Microsoft Graph) so selecting a module shows up with no user action at
+    all. Rejected for v1: it needs a separate OAuth-consent flow per
+    provider (Clerk's Google sign-in only grants login, not calendar-write
+    scope), a place to store refresh tokens (Clerk `privateMetadata` would
+    work, but it's new persisted state beyond `selectedModules`), and
+    ongoing sync logic to add/update/remove events as a selection changes.
+    Google specifically expires an unverified app's refresh tokens after 7
+    days, which would mean re-prompting for consent weekly unless the app
+    goes through Google's verification process — not worth it for a
+    personal, tens-of-users tool. Instead: a per-user ICS feed URL, signed
+    with an HMAC secret (`ICS_SIGNING_SECRET`) over their Clerk user ID, so
+    the URL itself is the access control — no token storage, no per-provider
+    integration, no new persisted state. Calendar apps fetch this
+    unauthenticated (subscription feeds are polled with no session/cookie),
+    generated on the fly from the static session dataset plus that user's
+    `selectedModules`, so it's always current as of whenever the app last
+    polled — not truly instant, but close enough, and it works identically
+    across Google, Outlook, and Apple Calendar today with no vendor-specific
+    code.
 
 ## 9. Decisions made / remaining defaults
 

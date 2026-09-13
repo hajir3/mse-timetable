@@ -50,8 +50,22 @@ navigate and contribute correctly.
 - **Backend**: none required for core functionality. Catalog browsing and
   calendar rendering are static + client-side; selection read/write goes
   straight from the browser to Clerk. Add a Next.js Route Handler only for a
-  specific, justified need (e.g. validating selected module codes against
-  the current catalog) — don't default to building an API layer.
+  specific, justified need — don't default to building an API layer. The one
+  that exists today, `app/api/calendar/[userId]/[signature]/route.ts`, is the
+  calendar-export feed described below.
+- **Calendar export**: a "Subscribe" button on the calendar page (see
+  `subscribe-calendar-button.tsx`) gives the user a personal ICS feed URL —
+  add it once to Google Calendar/Outlook/Apple Calendar and it stays current
+  on its own. The URL embeds the user's Clerk ID plus an HMAC signature
+  (`lib/ics-token.ts`, keyed by the `ICS_SIGNING_SECRET` env var) so the feed
+  route can serve it with no session/cookie at all — calendar apps poll
+  subscription feeds unauthenticated, so the signature *is* the access
+  control. `lib/ics.ts` builds the feed from the same merged course blocks
+  (`lib/aggregate-sessions.ts`) the week view renders — one VEVENT per block,
+  not one per raw lecture/tutorial row. Rejected a live OAuth push into
+  Google/Outlook's own calendar APIs instead — see SPECIFICATION.md §8.10 for
+  why (per-provider OAuth flows, token storage, Google's 7-day unverified-app
+  token expiry).
 - **Data build**: a TypeScript package (`packages/data-build`) that parses
   the source files under `data/` (xlsx via `exceljs`, plus a hand-maintained
   JSON/CSV for the academic calendar) into one static JSON dataset, using
