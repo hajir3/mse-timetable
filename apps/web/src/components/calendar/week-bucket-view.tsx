@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { addDays, format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { dataset } from "@/lib/dataset";
+import { classForModuleCode } from "@/lib/module-colors";
 import type { Session, WeekTag } from "@mse-timetable/shared";
 
 /**
@@ -121,7 +122,7 @@ export function WeekBucketView({
                           className={cn(
                             "rounded-sm px-2 py-1.5 text-sm font-medium text-white",
                             "portrait:px-1.5 portrait:py-1 portrait:text-xs",
-                            "bg-blue-600",
+                            classForModuleCode(card.moduleCode),
                           )}
                         >
                           {card.moduleCode}

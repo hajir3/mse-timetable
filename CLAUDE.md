@@ -18,9 +18,21 @@ navigate and contribute correctly.
 
 ## Stack
 
-- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui,
-  `react-big-calendar` (date-fns localizer). Deployed on Vercel, auto-deploy
-  from `main`. This is the entire hosting footprint.
+- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui.
+  Deployed on Vercel, auto-deploy from `main`. This is the entire hosting
+  footprint.
+- **Calendar views**: Month and Week are custom-built grids
+  (`month-grid-view.tsx`, `week-bucket-view.tsx`) — Monday-Friday only, one
+  aggregated block per course per day, color-coded by module type
+  (`lib/module-colors.ts`: orange=TSM, indigo=FTP, emerald=CM). Day view is
+  the one place still using `react-big-calendar` (date-fns localizer), since
+  a real time-proportional grid is worth it there. Don't try to make
+  react-big-calendar's month view Mon-Fri-only — its event blocks hardcode
+  1/7-width percentages that misalign against a 5-column grid; this was
+  tested and confirmed before building the custom grids instead. Week view
+  is deliberately not a clock-time grid at all — it mirrors the school's own
+  official module-selection tool: weekday × Morning/Afternoon/Evening/Block,
+  using the timetable workbook's own time-of-day column.
 - **Auth + persistence**: **Clerk**, hosted, Google OAuth only. Each user's
   selected modules are stored as metadata on their own Clerk account
   (`unsafeMetadata`), read/written directly from the browser via Clerk's

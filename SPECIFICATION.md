@@ -198,18 +198,30 @@ and redeploys on every push to `main`, this is the *entire* update mechanism
 
 ### 6.4 Personal calendar
 
-- FR11: Month view — shows one aggregated block per selected module per day
-  (all of a module's lecture/tutorial parts merged into one), plus
-  holiday/exam-week banners.
-- FR12: Week view — deliberately **not** a clock-time grid. Mirrors the
-  school's own official module-selection tool: a fixed weekday (Mon–Fri) ×
-  time-of-day (Morning/Afternoon/Evening) grid, using the timetable
-  workbook's own time-of-day bucket per session rather than exact times;
-  one aggregated block per module per day, same as month view.
-- FR13: Day view — full detail for one day, each lesson-type part (lecture,
-  tutorial 1, tutorial 2, ...) shown separately with exact times, on a
-  real clock-time grid trimmed to the dataset's actual earliest start /
-  latest end.
+- FR11: Month view — a custom-built grid, **Monday–Friday only** (no
+  module ever meets on a weekend in this data — confirmed by cross-checking
+  every catalog module against the timetable workbook, see CLAUDE.md), one
+  aggregated block per selected module per day (all of a module's
+  lecture/tutorial parts merged into one), plus holiday/exam-week banners.
+  Not react-big-calendar: its month view hardcodes event-block widths as
+  1/7 percentages, which would misalign against a 5-day grid — confirmed by
+  testing before building a custom grid instead.
+- FR12: Week view — also custom-built, deliberately **not** a clock-time
+  grid. Mirrors the school's own official module-selection tool: a fixed
+  weekday (Mon–Fri) × time-of-day (Morning/Afternoon/Evening/Block) grid,
+  using the timetable workbook's own time-of-day bucket per session rather
+  than exact times; one aggregated block per module per day, same as month
+  view. The Block row (for intensive block-format courses with no fixed
+  weekday) is always empty in this data but still rendered, for parity with
+  the official tool.
+- FR13: Day view — the one view still backed by react-big-calendar, since a
+  real time-proportional grid earns its keep here: full detail for one day,
+  each lesson-type part (lecture, tutorial 1, tutorial 2, ...) shown
+  separately with exact times, trimmed to the dataset's actual earliest
+  start / latest end.
+- FR13a: Course blocks in all three views are color-coded by module type
+  (CM/FTP/TSM) — orange for TSM, indigo for FTP, emerald for CM — matching
+  the official tool's per-type coloring convention.
 - FR14: All three views render, using the same underlying session data:
   regular lecture/tutorial blocks, holiday/lecture-free days (visually
   distinct, non-clickable/informational), and exam-session windows (visually

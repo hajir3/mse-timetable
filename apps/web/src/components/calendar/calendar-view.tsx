@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { Calendar, dateFnsLocalizer, type Event as RBCEvent, type View } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, addDays, parseISO } from "date-fns";
+import { format, parse, startOfWeek, getDay, addDays, addMonths, parseISO } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { dataset } from "@/lib/dataset";
-import type { Session } from "@mse-timetable/shared";
+import { hexForModuleCode } from "@/lib/module-colors";
 import { useSelectedModules } from "@/lib/selection";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { WeekBucketView } from "./week-bucket-view";
+import { MonthGridView } from "./month-grid-view";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -29,13 +30,8 @@ const BANNER_TAGS = new Set(["holiday", "lecture-free", "exam-regular", "exam-re
 
 interface CalEvent extends RBCEvent {
   kind: "session" | "week-banner" | "special-date";
+  moduleCode?: string;
 }
-
-const EVENT_COLORS: Record<CalEvent["kind"], string> = {
-  session: "#2563eb",
-  "week-banner": "#6b7280",
-  "special-date": "#d97706",
-};
 
 // 24h time everywhere, no AM/PM (uses the localizer's own date-fns format).
 const FORMATS = {
@@ -47,7 +43,7 @@ const FORMATS = {
   ) => `${loc?.format(start, "HH:mm", culture)}–${loc?.format(end, "HH:mm", culture)}`,
 };
 
-// The week/day time grid is trimmed to the earliest start / latest end across
+// The day time grid is trimmed to the earliest start / latest end across
 // every session in the dataset (not just the user's own selection, so the
 // range doesn't jump around as their selection changes), rounded out to the
 // nearest hour.
@@ -80,11 +76,12 @@ export function CalendarView() {
   const { selectedModules } = useSelectedModules();
   const [semesterKey, setSemesterKey] = useState(getInitialSemesterKey);
   const semester = dataset.semesters.find((s) => s.key === semesterKey) ?? dataset.semesters[0];
+  const selectedCodes = useMemo(() => new Set(selectedModules[semesterKey] ?? []), [selectedModules, semesterKey]);
 
-  // react-big-calendar's own uncontrolled view/date state (defaultView /
-  // defaultDate) doesn't reliably update in this React 19 / Next.js 16 dev
-  // setup — the Toolbar's Month/Week/Day and Back/Next clicks silently no-op.
-  // Controlling both explicitly sidesteps that entirely.
+  // Month and Week are custom-built grids (see month-grid-view.tsx /
+  // week-bucket-view.tsx) — react-big-calendar only renders Day view now,
+  // where a real time-proportional grid genuinely earns its keep (several
+  // lecture/tutorial parts with real overlapping times).
   const [view, setView] = useState<View>("month");
   const [date, setDate] = useState<Date>(() => parseISO(semester.start));
   const [dateInitializedFor, setDateInitializedFor] = useState(semesterKey);
@@ -93,48 +90,21 @@ export function CalendarView() {
     setDate(parseISO(semester.start));
   }
 
-  // Month/week view aggregate every lesson-type block (lecture, tutorial 1,
-  // tutorial 2, ...) for the same module on the same date into one event —
-  // day view keeps the full breakdown, since there's room to show it there.
-  const aggregate = view !== "day";
-
-  const events = useMemo<CalEvent[]>(() => {
-    const selected = new Set(selectedModules[semesterKey] ?? []);
+  // Only used by Day view — full per-lesson-type breakdown, plus
+  // holiday/exam-week banners and single-day special-date markers.
+  const dayEvents = useMemo<CalEvent[]>(() => {
     const out: CalEvent[] = [];
 
-    if (!aggregate) {
-      for (const s of dataset.sessions) {
-        if (s.semester !== semesterKey || !selected.has(s.moduleCode)) continue;
-        out.push({
-          kind: "session",
-          title: `${s.moduleCode} — ${s.lessonType}${s.isRoomException ? " (room change)" : ""}`,
-          start: parse(`${s.date} ${s.start}`, "yyyy-MM-dd HH:mm", new Date()),
-          end: parse(`${s.date} ${s.end}`, "yyyy-MM-dd HH:mm", new Date()),
-          resource: s,
-        });
-      }
-    } else {
-      const groups = new Map<string, Session[]>();
-      for (const s of dataset.sessions) {
-        if (s.semester !== semesterKey || !selected.has(s.moduleCode)) continue;
-        const key = `${s.moduleCode}|${s.date}`;
-        const list = groups.get(key);
-        if (list) list.push(s);
-        else groups.set(key, [s]);
-      }
-      for (const sessions of groups.values()) {
-        const minStart = sessions.reduce((a, s) => (s.start < a ? s.start : a), sessions[0].start);
-        const maxEnd = sessions.reduce((a, s) => (s.end > a ? s.end : a), sessions[0].end);
-        const hasException = sessions.some((s) => s.isRoomException);
-        const first = sessions[0];
-        out.push({
-          kind: "session",
-          title: `${first.moduleCode}${hasException ? " (room change)" : ""}`,
-          start: parse(`${first.date} ${minStart}`, "yyyy-MM-dd HH:mm", new Date()),
-          end: parse(`${first.date} ${maxEnd}`, "yyyy-MM-dd HH:mm", new Date()),
-          resource: sessions,
-        });
-      }
+    for (const s of dataset.sessions) {
+      if (s.semester !== semesterKey || !selectedCodes.has(s.moduleCode)) continue;
+      out.push({
+        kind: "session",
+        moduleCode: s.moduleCode,
+        title: `${s.moduleCode} — ${s.lessonType}${s.isRoomException ? " (room change)" : ""}`,
+        start: parse(`${s.date} ${s.start}`, "yyyy-MM-dd HH:mm", new Date()),
+        end: parse(`${s.date} ${s.end}`, "yyyy-MM-dd HH:mm", new Date()),
+        resource: s,
+      });
     }
 
     for (const w of dataset.calendarWeeks) {
@@ -164,7 +134,7 @@ export function CalendarView() {
     }
 
     return out;
-  }, [semesterKey, selectedModules, semester, aggregate]);
+  }, [semesterKey, selectedCodes, semester]);
 
   const title =
     view === "month"
@@ -185,10 +155,9 @@ export function CalendarView() {
         </TabsList>
       </Tabs>
 
-      {/* One shared toolbar drives both react-big-calendar (month/day) and
-          the custom WeekBucketView ("work_week") — react-big-calendar's own
-          Toolbar is suppressed (`toolbar={false}` below) since it only
-          exists while <Calendar> is mounted, and Week isn't <Calendar>. */}
+      {/* One shared toolbar drives all three views — react-big-calendar's
+          own Toolbar is suppressed (`toolbar={false}` below) since Month and
+          Week aren't <Calendar> at all anymore. */}
       <div className="flex items-center justify-between">
         <div className="flex gap-1">
           <Button variant="outline" size="sm" onClick={() => setDate(new Date())}>
@@ -197,14 +166,16 @@ export function CalendarView() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDate(view === "month" ? addDays(date, -30) : addDays(date, view === "day" ? -1 : -7))}
+            onClick={() =>
+              setDate(view === "month" ? addMonths(date, -1) : addDays(date, view === "day" ? -1 : -7))
+            }
           >
             Back
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDate(view === "month" ? addDays(date, 30) : addDays(date, view === "day" ? 1 : 7))}
+            onClick={() => setDate(view === "month" ? addMonths(date, 1) : addDays(date, view === "day" ? 1 : 7))}
           >
             Next
           </Button>
@@ -226,18 +197,16 @@ export function CalendarView() {
         </div>
       </div>
 
-      {view === "work_week" ? (
-        <WeekBucketView
-          semesterKey={semesterKey}
-          date={date}
-          selectedCodes={new Set(selectedModules[semesterKey] ?? [])}
-        />
-      ) : (
+      {view === "month" && <MonthGridView semesterKey={semesterKey} date={date} selectedCodes={selectedCodes} />}
+      {view === "work_week" && (
+        <WeekBucketView semesterKey={semesterKey} date={date} selectedCodes={selectedCodes} />
+      )}
+      {view === "day" && (
         <div className="rounded-md border bg-background p-2">
           <Calendar
             localizer={localizer}
-            events={events}
-            views={["month", "day"]}
+            events={dayEvents}
+            views={["day"]}
             toolbar={false}
             view={view}
             onView={setView}
@@ -250,9 +219,19 @@ export function CalendarView() {
             // many flex layers are above it (a well-known react-big-calendar
             // gotcha) — an explicit viewport-relative height sidesteps that.
             style={{ height: "calc(100vh - 260px)" }}
-            eventPropGetter={(event) => ({
-              style: { backgroundColor: EVENT_COLORS[(event as CalEvent).kind] },
-            })}
+            eventPropGetter={(event) => {
+              // Inline style, not a Tailwind className: react-big-calendar's
+              // own .rbc-event rule has equal selector specificity and wins
+              // on stylesheet order, so only a real inline color reliably
+              // overrides it (confirmed — a className attempt here didn't
+              // take effect).
+              const e = event as CalEvent;
+              if (e.kind === "session" && e.moduleCode) {
+                return { style: { backgroundColor: hexForModuleCode(e.moduleCode) } };
+              }
+              if (e.kind === "special-date") return { style: { backgroundColor: "#f59e0b" } };
+              return { style: { backgroundColor: "#64748b" } };
+            }}
           />
         </div>
       )}
