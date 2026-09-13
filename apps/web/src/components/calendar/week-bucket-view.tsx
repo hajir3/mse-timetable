@@ -34,8 +34,17 @@ const BANNER_TAGS = new Set<WeekTag>(["holiday", "lecture-free", "exam-regular",
 interface CourseCard {
   moduleCode: string;
   hasRoomException: boolean;
+  start: string;
+  end: string;
+  room: string;
+  mode: "on-site" | "online";
 }
 
+// Merges a module's lecture/tutorial parts within the same day+bucket into
+// one card — start/end widen to cover all of them (usually back-to-back),
+// room/mode are taken from whichever part is seen first (they're the same
+// across parts in this data except for the rare room-change case, which
+// `hasRoomException` still flags).
 function aggregateByDayAndBucket(sessions: Session[]): Map<string, CourseCard> {
   const byKey = new Map<string, CourseCard>();
   for (const s of sessions) {
@@ -43,8 +52,17 @@ function aggregateByDayAndBucket(sessions: Session[]): Map<string, CourseCard> {
     const existing = byKey.get(key);
     if (existing) {
       existing.hasRoomException = existing.hasRoomException || s.isRoomException;
+      if (s.start < existing.start) existing.start = s.start;
+      if (s.end > existing.end) existing.end = s.end;
     } else {
-      byKey.set(key, { moduleCode: s.moduleCode, hasRoomException: s.isRoomException });
+      byKey.set(key, {
+        moduleCode: s.moduleCode,
+        hasRoomException: s.isRoomException,
+        start: s.start,
+        end: s.end,
+        room: s.room,
+        mode: s.mode,
+      });
     }
   }
   return byKey;
@@ -124,15 +142,19 @@ export function WeekBucketView({
                         <div
                           key={card.moduleCode}
                           className={cn(
-                            "flex flex-1 flex-col items-center justify-center rounded-sm px-2 py-1.5 text-center text-sm font-medium text-white",
-                            "portrait:px-1.5 portrait:py-1 portrait:text-xs",
+                            "flex flex-1 flex-col justify-center rounded-sm px-2 py-1.5 text-left text-white",
+                            "portrait:px-1.5 portrait:py-1",
                             classForModuleCode(card.moduleCode),
                           )}
                         >
-                          {card.moduleCode}
-                          {card.hasRoomException && (
-                            <span className="text-xs font-normal opacity-90 portrait:text-[10px]">room change</span>
-                          )}
+                          <div className="text-xs opacity-90 portrait:text-[10px]">
+                            {card.start}–{card.end}
+                          </div>
+                          <div className="text-sm font-semibold portrait:text-xs">{card.moduleCode}</div>
+                          <div className="text-xs opacity-90 portrait:text-[10px]">
+                            {card.mode === "online" ? "Online" : card.room}
+                            {card.hasRoomException && " (room change)"}
+                          </div>
                         </div>
                       ))}
                     </div>
