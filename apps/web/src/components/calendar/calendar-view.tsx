@@ -9,6 +9,9 @@ import { dataset } from "@/lib/dataset";
 import type { Session } from "@mse-timetable/shared";
 import { useSelectedModules } from "@/lib/selection";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { WeekBucketView } from "./week-bucket-view";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -163,6 +166,13 @@ export function CalendarView() {
     return out;
   }, [semesterKey, selectedModules, semester, aggregate]);
 
+  const title =
+    view === "month"
+      ? format(date, "MMMM yyyy")
+      : view === "day"
+        ? format(date, "EEEE, MMMM d, yyyy")
+        : `${format(startOfWeek(date, { weekStartsOn: 1 }), "MMM d")} – ${format(addDays(startOfWeek(date, { weekStartsOn: 1 }), 4), "MMM d, yyyy")}`;
+
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
       <Tabs value={semesterKey} onValueChange={(v) => setSemesterKey(v as string)}>
@@ -174,32 +184,78 @@ export function CalendarView() {
           ))}
         </TabsList>
       </Tabs>
-      <div className="rounded-md border bg-background p-2">
-        <Calendar
-          localizer={localizer}
-          events={events}
-          // "work_week" (Mon-Fri only) instead of "week" (Mon-Sun) — no
-          // module ever meets on a weekend in this data, and unlike month
-          // view, react-big-calendar's work_week is a first-class 5-day
-          // view rather than something that has to be faked with CSS.
-          views={["month", "work_week", "day"]}
-          messages={{ work_week: "Week" }}
-          view={view}
-          onView={setView}
-          date={date}
-          onNavigate={setDate}
-          min={TIME_BOUNDS.min}
-          max={TIME_BOUNDS.max}
-          formats={FORMATS}
-          // A percentage height here can collapse to ~0 depending on how
-          // many flex layers are above it (a well-known react-big-calendar
-          // gotcha) — an explicit viewport-relative height sidesteps that.
-          style={{ height: "calc(100vh - 220px)" }}
-          eventPropGetter={(event) => ({
-            style: { backgroundColor: EVENT_COLORS[(event as CalEvent).kind] },
-          })}
-        />
+
+      {/* One shared toolbar drives both react-big-calendar (month/day) and
+          the custom WeekBucketView ("work_week") — react-big-calendar's own
+          Toolbar is suppressed (`toolbar={false}` below) since it only
+          exists while <Calendar> is mounted, and Week isn't <Calendar>. */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1">
+          <Button variant="outline" size="sm" onClick={() => setDate(new Date())}>
+            Today
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDate(view === "month" ? addDays(date, -30) : addDays(date, view === "day" ? -1 : -7))}
+          >
+            Back
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDate(view === "month" ? addDays(date, 30) : addDays(date, view === "day" ? 1 : 7))}
+          >
+            Next
+          </Button>
+        </div>
+        <p className="text-sm font-medium">{title}</p>
+        <div className="flex gap-1 rounded-md bg-muted p-0.5">
+          {(["month", "work_week", "day"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={cn(
+                "rounded px-3 py-1 text-sm font-medium transition-colors",
+                view === v ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {v === "work_week" ? "Week" : v === "month" ? "Month" : "Day"}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {view === "work_week" ? (
+        <WeekBucketView
+          semesterKey={semesterKey}
+          date={date}
+          selectedCodes={new Set(selectedModules[semesterKey] ?? [])}
+        />
+      ) : (
+        <div className="rounded-md border bg-background p-2">
+          <Calendar
+            localizer={localizer}
+            events={events}
+            views={["month", "day"]}
+            toolbar={false}
+            view={view}
+            onView={setView}
+            date={date}
+            onNavigate={setDate}
+            min={TIME_BOUNDS.min}
+            max={TIME_BOUNDS.max}
+            formats={FORMATS}
+            // A percentage height here can collapse to ~0 depending on how
+            // many flex layers are above it (a well-known react-big-calendar
+            // gotcha) — an explicit viewport-relative height sidesteps that.
+            style={{ height: "calc(100vh - 260px)" }}
+            eventPropGetter={(event) => ({
+              style: { backgroundColor: EVENT_COLORS[(event as CalEvent).kind] },
+            })}
+          />
+        </div>
+      )}
     </div>
   );
 }

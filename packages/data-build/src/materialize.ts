@@ -62,6 +62,7 @@ export function materializeSessions(
           date,
           weekday,
           lessonType: t.lessonType,
+          timeOfDay: t.timeOfDay,
           segments: t.segments,
           start: t.start,
           end: t.end,

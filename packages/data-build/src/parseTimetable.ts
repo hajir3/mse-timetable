@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { format } from "date-fns";
-import { WEEKDAYS, type SessionSegment, type Weekday } from "@mse-timetable/shared";
+import { TIME_OF_DAY_VALUES, WEEKDAYS, type SessionSegment, type TimeOfDay, type Weekday } from "@mse-timetable/shared";
 
 /**
  * Parses a semester timetable workbook (`*_timetable_MSE_Reg-D_v9_published.xlsx`).
@@ -23,6 +23,7 @@ const COLS = {
   moduleCode: 5,
   lessonType: 6,
   timeSlot: 7,
+  timeOfDay: 8,
   mode: 9,
   venueDefault: 10,
   roomDefault: 11,
@@ -43,6 +44,7 @@ export interface SessionTemplate {
   moduleCode: string;
   weekday: Weekday;
   lessonType: string;
+  timeOfDay: TimeOfDay;
   segments: SessionSegment[];
   start: string;
   end: string;
@@ -118,6 +120,14 @@ export async function parseTimetable(filePath: string, sheetName: string): Promi
     const start = segments.reduce((a, b) => (a < b.start ? a : b.start), segments[0].start);
     const end = segments.reduce((a, b) => (a > b.end ? a : b.end), segments[0].end);
 
+    const timeOfDayText = row.getCell(COLS.timeOfDay).text.trim().toLowerCase();
+    if (!(TIME_OF_DAY_VALUES as readonly string[]).includes(timeOfDayText)) {
+      throw new Error(
+        `${context}: unexpected time-of-day "${timeOfDayText}" (expected one of ${TIME_OF_DAY_VALUES.join(", ")})`,
+      );
+    }
+    const timeOfDay = timeOfDayText as TimeOfDay;
+
     const modeText = row.getCell(COLS.mode).text.trim();
     const mode = modeText === "Lecture on-site" ? "on-site" : modeText === "Lecture online" ? "online" : null;
     if (!mode) {
@@ -137,7 +147,7 @@ export async function parseTimetable(filePath: string, sheetName: string): Promi
           }
         : null;
 
-    templates.push({ moduleCode, weekday, lessonType, segments, start, end, mode, venue, room, exception });
+    templates.push({ moduleCode, weekday, lessonType, timeOfDay, segments, start, end, mode, venue, room, exception });
   }
 
   return templates;

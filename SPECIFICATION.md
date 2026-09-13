@@ -198,18 +198,25 @@ and redeploys on every push to `main`, this is the *entire* update mechanism
 
 ### 6.4 Personal calendar
 
-- FR11: Month view — shows days with any session/holiday/exam marker;
-  clicking/expanding a day shows its sessions.
-- FR12: Week view — shows time-gridded sessions Mon–Fri (or Mon–Sun) for the
-  selected week, with room/venue and lesson type visible.
-- FR13: Day view — full detail for one day.
+- FR11: Month view — shows one aggregated block per selected module per day
+  (all of a module's lecture/tutorial parts merged into one), plus
+  holiday/exam-week banners.
+- FR12: Week view — deliberately **not** a clock-time grid. Mirrors the
+  school's own official module-selection tool: a fixed weekday (Mon–Fri) ×
+  time-of-day (Morning/Afternoon/Evening) grid, using the timetable
+  workbook's own time-of-day bucket per session rather than exact times;
+  one aggregated block per module per day, same as month view.
+- FR13: Day view — full detail for one day, each lesson-type part (lecture,
+  tutorial 1, tutorial 2, ...) shown separately with exact times, on a
+  real clock-time grid trimmed to the dataset's actual earliest start /
+  latest end.
 - FR14: All three views render, using the same underlying session data:
   regular lecture/tutorial blocks, holiday/lecture-free days (visually
   distinct, non-clickable/informational), and exam-session windows (visually
   distinct, tied to the modules the user actually selected where the data
   allows that association — otherwise shown as a general "exam period"
   banner).
-- FR15: All times displayed in Europe/Zurich local time.
+- FR15: All times displayed in Europe/Zurich local time, 24-hour format.
 
 ## 7. Data model (shape of the generated static dataset + Clerk account data — not database tables)
 
@@ -228,7 +235,8 @@ per-user metadata. There are no application-owned database tables in v1.
   group key linking `_A`/`_B` variants)
 - `ModuleOffering` (module, semester, mode/location, per-profile priority map)
 - `Session` (materialized: module, concrete date, start/end time, lesson
-  type, actual venue/room for that date — pre-resolved against exceptions
+  type, the source workbook's own morning/afternoon/evening time-of-day
+  bucket, actual venue/room for that date — pre-resolved against exceptions
   and against calendar-week type)
 
 **Per-user account data (Clerk `unsafeMetadata`):**

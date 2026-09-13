@@ -77,12 +77,20 @@ export type SessionSegment = z.infer<typeof SessionSegmentSchema>;
 
 export const LESSON_TYPES_HINT = ["lecture", "tutorial"] as const; // lessonType is free-form ("tutorial 1", "tutorial 2", ...) but usually starts with one of these
 
+// Straight from the timetable workbook's own "time-of-day" column — not
+// derived from start/end times, so it stays faithful to the school's own
+// bucketing (used for the official-tool-style week view; see CLAUDE.md).
+export const TIME_OF_DAY_VALUES = ["morning", "afternoon", "evening"] as const;
+export const TimeOfDaySchema = z.enum(TIME_OF_DAY_VALUES);
+export type TimeOfDay = z.infer<typeof TimeOfDaySchema>;
+
 export const SessionSchema = z.object({
   moduleCode: z.string(),
   semester: z.string(), // semester *key*, e.g. "AUT26-27" (not just the term) to stay unambiguous across academic years
   date: z.string(), // "YYYY-MM-DD"
   weekday: WeekdaySchema,
   lessonType: z.string(), // "lecture", "tutorial 1", "tutorial 2", ...
+  timeOfDay: TimeOfDaySchema,
   segments: z.array(SessionSegmentSchema).min(1),
   start: z.string(), // earliest segment start, "HH:MM" — convenience for calendar rendering
   end: z.string(), // latest segment end, "HH:MM"
