@@ -55,7 +55,10 @@ export function CalendarView() {
         </TabsList>
       </Tabs>
 
-      <div className="flex items-center justify-between">
+      {/* Landscape: one row, three groups spaced with justify-between (as
+          before). Portrait: too cramped for that — stack the three groups
+          vertically instead, each centered. */}
+      <div className="flex flex-col items-center gap-2 landscape:flex-row landscape:items-center landscape:justify-between landscape:gap-0">
         <div className="flex gap-1">
           <Button variant="outline" size="sm" onClick={() => setDate(new Date())}>
             Today
