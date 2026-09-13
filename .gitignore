@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js / build output
+.next/
+out/
+dist/
+build/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Drizzle
+drizzle/meta/
+
+# Claude Code local state
+.claude/
