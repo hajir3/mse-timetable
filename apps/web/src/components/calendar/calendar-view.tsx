@@ -36,12 +36,25 @@ export function CalendarView() {
     setDate(parseISO(semester.start));
   }
 
+  // Week view's title is the ISO week number from the academic calendar
+  // (dataset.calendarWeeks — sourced from the school's own dates PDF) rather
+  // than a date range: "Week 38" is how the school itself refers to weeks,
+  // and it's what the official module-selection tool's own week view shows.
+  // Month/Day keep date-based titles — a month spans many weeks so a single
+  // week number wouldn't represent it, and a day view without its actual
+  // date would lose the one piece of information Back/Next alone can't
+  // convey (which day, not just which week).
+  const currentWeek = dataset.calendarWeeks.find(
+    (w) => w.semester === semesterKey && w.weekStart === format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+  );
   const title =
     view === "month"
       ? format(date, "MMMM yyyy")
       : view === "day"
         ? format(date, "EEEE, MMMM d, yyyy")
-        : `${format(startOfWeek(date, { weekStartsOn: 1 }), "MMM d")} – ${format(addDays(startOfWeek(date, { weekStartsOn: 1 }), 4), "MMM d, yyyy")}`;
+        : currentWeek
+          ? `Week ${currentWeek.weekNumber}`
+          : `${format(startOfWeek(date, { weekStartsOn: 1 }), "MMM d")} – ${format(addDays(startOfWeek(date, { weekStartsOn: 1 }), 4), "MMM d, yyyy")}`;
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
