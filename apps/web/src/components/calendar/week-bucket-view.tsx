@@ -12,6 +12,18 @@ import type { Session, WeekTag } from "@mse-timetable/shared";
  * weekday x time-of-day grid (Morning/Afternoon/Evening — no clock times),
  * one card per course per day, rather than a real time-proportional grid.
  *
+ * Landscape and portrait render genuinely different DOM structures (both
+ * always present, toggled by `hidden`/`landscape:`/`portrait:` — no JS
+ * orientation detection):
+ * - Landscape has room for a leading time-of-day label column plus 5 day
+ *   columns with a comfortable minimum width; if it's ever too narrow the
+ *   grid scrolls horizontally rather than squeezing further.
+ * - Portrait moves each time-of-day label into its own full-width header
+ *   bar above that section instead of a column, freeing the 5 day columns
+ *   to be plain equal-width (grid-cols-5, no minimum) — same sizing as
+ *   month view, so it fits the screen without needing to scroll, just
+ *   with more compact cards.
+ *
  * The 4th row ("Block", for intensive block-format courses that don't run
  * on a fixed weekday) is always empty here: cross-checked every module in
  * the catalog workbook against the timetable workbook (55/55 AUT modules
@@ -68,6 +80,27 @@ function aggregateByDayAndBucket(sessions: Session[]): Map<string, CourseCard> {
   return byKey;
 }
 
+function CourseCardView({ card, compact }: { card: CourseCard; compact: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-1 flex-col justify-center overflow-hidden rounded-sm text-left text-white",
+        compact ? "px-1.5 py-1" : "px-2 py-1.5",
+        classForModuleCode(card.moduleCode),
+      )}
+    >
+      <div className={cn("opacity-90", compact ? "text-[10px]" : "text-xs")}>
+        {card.start}–{card.end}
+      </div>
+      <div className={cn("break-words font-semibold", compact ? "text-xs" : "text-sm")}>{card.moduleCode}</div>
+      <div className={cn("opacity-90", compact ? "text-[10px]" : "text-xs")}>
+        {card.mode === "online" ? "Online" : card.room}
+        {card.hasRoomException && " (room change)"}
+      </div>
+    </div>
+  );
+}
+
 export function WeekBucketView({
   semesterKey,
   date,
@@ -91,6 +124,11 @@ export function WeekBucketView({
   );
   const cardsByKey = aggregateByDayAndBucket(sessionsThisWeek);
 
+  function cardsFor(d: Date, bucket: (typeof TIME_OF_DAY_ROWS)[number]) {
+    const dateStr = format(d, "yyyy-MM-dd");
+    return [...cardsByKey.entries()].filter(([key]) => key.startsWith(`${dateStr}|${bucket}|`)).map(([, card]) => card);
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {bannerTag && (
@@ -99,88 +137,79 @@ export function WeekBucketView({
         </div>
       )}
 
-      {/* Same weekday-columns/time-of-day-rows grid in both orientations —
-          portrait doesn't transpose it (a week grid isn't a month grid; the
-          rows aren't naturally "vertical days" the way month weeks are, and
-          a transpose read worse in practice). Instead portrait shrinks
-          padding/text and abbreviates weekday names, and the grid enforces
-          a minimum per-day-column width so text never gets squished below
-          legibility — the outer overflow-x-auto lets a narrow phone scroll
-          sideways through the remaining days instead. */}
-      <div className="overflow-x-auto rounded-md border">
-        {/* portrait:w-fit is the actual fix here: without it, this grid's
-            own box stays at its parent's (100vw-ish) width while its
-            minmax-floored columns force the rendered content wider still —
-            the mismatch means this element's own bg-border background (the
-            grid-line trick) only paints within the narrower nominal width,
-            leaving the genuinely-overflowing columns with no background/
-            lines at all once scrolled into view. Sizing the grid to its own
-            content keeps its background in sync with what's actually drawn.
-            Landscape doesn't need this — its plain 1fr columns (no minmax
-            floor) just shrink to fit, so it never actually overflows. */}
-        <div className="grid grid-cols-[80px_repeat(5,1fr)] gap-px bg-border portrait:w-fit portrait:grid-cols-[52px_repeat(5,minmax(92px,1fr))]">
+      {/* Landscape: time-of-day label column + 5 day columns, comfortable
+          minimum width, scrolls horizontally if it doesn't fit. */}
+      <div className="hidden overflow-x-auto rounded-md border landscape:block">
+        <div className="grid grid-cols-[80px_repeat(5,1fr)] gap-px bg-border">
           <div className="bg-background" />
           {weekDates.map((d, i) => (
-            <div key={i} className="bg-background p-2 text-center text-sm font-semibold portrait:p-1.5 portrait:text-xs">
-              <span className="portrait:hidden">{format(d, "EEEE")}</span>
-              <span className="hidden portrait:inline">{format(d, "EEE")}</span>
-              <div className="text-xs font-normal text-muted-foreground portrait:text-[10px]">{format(d, "MMM d")}</div>
+            <div key={i} className="bg-background p-2 text-center text-sm font-semibold">
+              {format(d, "EEEE")}
+              <div className="text-xs font-normal text-muted-foreground">{format(d, "MMM d")}</div>
             </div>
           ))}
 
           {TIME_OF_DAY_ROWS.map((bucket) => (
             <Fragment key={bucket}>
-              <div
-                key={`${bucket}-label`}
-                className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground portrait:p-1 portrait:text-[10px]"
-              >
+              <div className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground">
                 {TIME_OF_DAY_LABELS[bucket]}
               </div>
-              {weekDates.map((d, i) => {
-                const dateStr = format(d, "yyyy-MM-dd");
-                const cards = [...cardsByKey.entries()]
-                  .filter(([key]) => key.startsWith(`${dateStr}|${bucket}|`))
-                  .map(([, card]) => card);
-                return (
-                  <div key={`${bucket}-${i}`} className="min-h-20 bg-background p-1 portrait:min-h-16">
-                    {/* flex-1 on each card: a single card fills the entire
-                        section height (matching the tallest cell in this
-                        row, since grid items stretch by default); multiple
-                        cards in the same cell split it evenly instead. */}
-                    <div className="flex h-full flex-col gap-1">
-                      {cards.map((card) => (
-                        <div
-                          key={card.moduleCode}
-                          className={cn(
-                            "flex flex-1 flex-col justify-center rounded-sm px-2 py-1.5 text-left text-white",
-                            "portrait:px-1.5 portrait:py-1",
-                            classForModuleCode(card.moduleCode),
-                          )}
-                        >
-                          <div className="text-xs opacity-90 portrait:text-[10px]">
-                            {card.start}–{card.end}
-                          </div>
-                          <div className="text-sm font-semibold portrait:text-xs">{card.moduleCode}</div>
-                          <div className="text-xs opacity-90 portrait:text-[10px]">
-                            {card.mode === "online" ? "Online" : card.room}
-                            {card.hasRoomException && " (room change)"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              {weekDates.map((d, i) => (
+                <div key={i} className="min-h-20 bg-background p-1">
+                  <div className="flex h-full flex-col gap-1">
+                    {cardsFor(d, bucket).map((card) => (
+                      <CourseCardView key={card.moduleCode} card={card} compact={false} />
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </Fragment>
           ))}
 
-          {/* Always-empty "Block" row — see the file-level comment above.
-              Spans all 5 day columns as one cell, matching the official
-              tool's layout for a row that isn't really per-weekday. */}
-          <div className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground portrait:p-1 portrait:text-[10px]">
+          <div className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground">
             Block
           </div>
           <div className="col-span-5 min-h-12 bg-background p-1" />
+        </div>
+      </div>
+
+      {/* Portrait: no label column. Each time-of-day section gets its own
+          full-width header bar instead, so the 5 day columns are plain
+          equal-width (grid-cols-5, no minimum) — same sizing approach as
+          month view, so it fits the screen without scrolling. */}
+      <div className="hidden portrait:flex portrait:flex-col portrait:gap-2">
+        <div className="grid grid-cols-5 gap-px overflow-hidden rounded-t-md border bg-border">
+          {weekDates.map((d, i) => (
+            <div key={i} className="bg-background p-1.5 text-center text-xs font-semibold">
+              {format(d, "EEE")}
+              <div className="text-[10px] font-normal text-muted-foreground">{format(d, "d")}</div>
+            </div>
+          ))}
+        </div>
+
+        {TIME_OF_DAY_ROWS.map((bucket) => (
+          <div key={bucket} className="overflow-hidden rounded-md border">
+            <div className="bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+              {TIME_OF_DAY_LABELS[bucket]}
+            </div>
+            <div className="grid grid-cols-5 gap-px bg-border">
+              {weekDates.map((d, i) => (
+                <div key={i} className="min-h-16 bg-background p-1">
+                  <div className="flex h-full flex-col gap-1">
+                    {cardsFor(d, bucket).map((card) => (
+                      <CourseCardView key={card.moduleCode} card={card} compact />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Always-empty "Block" section — see the file-level comment above. */}
+        <div className="overflow-hidden rounded-md border">
+          <div className="bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">Block</div>
+          <div className="min-h-10 bg-background p-1" />
         </div>
       </div>
     </div>
