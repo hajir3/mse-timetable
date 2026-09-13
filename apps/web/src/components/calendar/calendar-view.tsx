@@ -6,6 +6,7 @@ import { format, parse, startOfWeek, getDay, addDays, parseISO } from "date-fns"
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { dataset } from "@/lib/dataset";
+import type { Session } from "@mse-timetable/shared";
 import { useSelectedModules } from "@/lib/selection";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -89,19 +90,48 @@ export function CalendarView() {
     setDate(parseISO(semester.start));
   }
 
+  // Month/week view aggregate every lesson-type block (lecture, tutorial 1,
+  // tutorial 2, ...) for the same module on the same date into one event —
+  // day view keeps the full breakdown, since there's room to show it there.
+  const aggregate = view !== "day";
+
   const events = useMemo<CalEvent[]>(() => {
     const selected = new Set(selectedModules[semesterKey] ?? []);
     const out: CalEvent[] = [];
 
-    for (const s of dataset.sessions) {
-      if (s.semester !== semesterKey || !selected.has(s.moduleCode)) continue
-      out.push({
-        kind: "session",
-        title: `${s.moduleCode} — ${s.lessonType}${s.isRoomException ? " (room change)" : ""}`,
-        start: parse(`${s.date} ${s.start}`, "yyyy-MM-dd HH:mm", new Date()),
-        end: parse(`${s.date} ${s.end}`, "yyyy-MM-dd HH:mm", new Date()),
-        resource: s,
-      });
+    if (!aggregate) {
+      for (const s of dataset.sessions) {
+        if (s.semester !== semesterKey || !selected.has(s.moduleCode)) continue;
+        out.push({
+          kind: "session",
+          title: `${s.moduleCode} — ${s.lessonType}${s.isRoomException ? " (room change)" : ""}`,
+          start: parse(`${s.date} ${s.start}`, "yyyy-MM-dd HH:mm", new Date()),
+          end: parse(`${s.date} ${s.end}`, "yyyy-MM-dd HH:mm", new Date()),
+          resource: s,
+        });
+      }
+    } else {
+      const groups = new Map<string, Session[]>();
+      for (const s of dataset.sessions) {
+        if (s.semester !== semesterKey || !selected.has(s.moduleCode)) continue;
+        const key = `${s.moduleCode}|${s.date}`;
+        const list = groups.get(key);
+        if (list) list.push(s);
+        else groups.set(key, [s]);
+      }
+      for (const sessions of groups.values()) {
+        const minStart = sessions.reduce((a, s) => (s.start < a ? s.start : a), sessions[0].start);
+        const maxEnd = sessions.reduce((a, s) => (s.end > a ? s.end : a), sessions[0].end);
+        const hasException = sessions.some((s) => s.isRoomException);
+        const first = sessions[0];
+        out.push({
+          kind: "session",
+          title: `${first.moduleCode}${hasException ? " (room change)" : ""}`,
+          start: parse(`${first.date} ${minStart}`, "yyyy-MM-dd HH:mm", new Date()),
+          end: parse(`${first.date} ${maxEnd}`, "yyyy-MM-dd HH:mm", new Date()),
+          resource: sessions,
+        });
+      }
     }
 
     for (const w of dataset.calendarWeeks) {
@@ -131,7 +161,7 @@ export function CalendarView() {
     }
 
     return out;
-  }, [semesterKey, selectedModules, semester]);
+  }, [semesterKey, selectedModules, semester, aggregate]);
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
