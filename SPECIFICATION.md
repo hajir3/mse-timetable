@@ -1,17 +1,20 @@
 # Specification — Personal Master's Timetable App
 
-Status: v0.2 — architecture decided, ready for implementation.
+Status: v0.3 — architecture simplified after user review, ready for implementation.
 
-**Locked in with the user:** GitHub repo `mse-timetable`, public. Auth: Google
-OAuth only. Data import: **git-driven** — the admin (repo owner) updates the
-timetable by committing new/changed source files and pushing; there is no
-admin UI or manually-run local CLI step (see §6.1, §8.9).
+**Locked in with the user:** GitHub repo `mse-timetable` (public). Auth:
+**Clerk**, Google OAuth. **No database** — the module catalog/sessions are
+precomputed once per semester into a static JSON bundled with the frontend,
+and each user's module selection is stored as metadata on their Clerk
+account. Data updates: commit new/changed source files under `data/` and
+push — the static JSON is regenerated as part of the normal Vercel build, no
+CI pipeline, no admin UI. DNS: `timetable.mse.hajir.ch`.
 
 ## 1. Problem statement
 
-The school (ZHAW MSE, Region D / Zurich) does not provide students with a personal
-online timetable. It only distributes, per academic year/semester, a set of
-spreadsheet/PDF files:
+The school (ZHAW MSE, Region D / Zurich) does not provide students with a
+personal online timetable. It only distributes, per academic year/semester,
+a set of spreadsheet/PDF files:
 
 - a **module catalog** listing every module on offer per specialization profile,
 - a **semester timetable** listing the actual weekly recurring lecture/tutorial
@@ -22,16 +25,17 @@ spreadsheet/PDF files:
 Students must manually cross-reference these files to figure out "what do my
 weeks actually look like." This app removes that manual work: the admin
 commits the official files into the repo once per semester (a normal `git
-push`), a CI pipeline re-imports them automatically, and any student can pick
-their own modules from the shared catalog and get a personal month/week/day
-calendar.
+push`), the static dataset is rebuilt automatically as part of the next
+Vercel deploy, and any student can pick their own modules from the shared
+catalog and get a personal month/week/day calendar.
 
 ## 2. Goals
 
-1. Ingest the school's official per-semester source files (2× xlsx + 1× PDF)
-   into a structured database.
-2. Let an authenticated user browse the full module catalog and select which
-   modules they are enrolled in ("my modules"), persisted per user/semester.
+1. Turn the school's official per-semester source files (2× xlsx + 1×
+   hand-keyed calendar file) into a single static dataset at build time.
+2. Let an authenticated user browse the full module catalog (client-side,
+   from the static dataset already in the page) and select which modules
+   they are enrolled in ("my modules"), persisted on their own account.
 3. Render a personal calendar (month / week / day views) combining:
    - the user's selected modules' recurring sessions (lecture + tutorials),
      including day-specific room-change overrides,
@@ -39,33 +43,36 @@ calendar.
    - exam session windows (regular + resit) and exam-viewing sessions.
 4. Keep the app decoupled from the school entirely — no SSO, no scraping, no
    automated connection to any school system. Auth exists purely to let a
-   person save/reload their own selection across visits.
+   person save/reload their own selection across devices.
 5. Modular, readable codebase — a solo/small-audience hobby project, not
    enterprise software; optimize for "easy to understand and cheap to run"
-   over scalability.
+   over scalability. No infrastructure to operate beyond a hosted frontend
+   and a hosted auth provider — no database, no server, no CI pipeline.
 
 ## 3. Non-goals (v1)
 
 - No integration with the school's real SSO/systems.
 - No grades, assignments, notifications, or LMS features.
-- No multi-tenant support for other schools/programs (the data model should be
-  generic enough to reuse later, but v1 targets this one program/region only).
-- No collaborative/social features (seeing classmates' schedules, etc.) —
-  🟡 open question, see §9.
+- No multi-tenant support for other schools/programs (the data model should
+  be generic enough to reuse later, but v1 targets this one program/region
+  only).
+- No collaborative/social features (seeing classmates' schedules, etc.).
 - No real-time sync with the school if they change a room last-minute after
-  import; freshness is "as of last admin re-import."
+  a data update; freshness is "as of the last commit to `data/`."
+- No database, and nothing that would require one (v1 fits entirely in a
+  static dataset + per-user account metadata).
 
 ## 4. Users & roles
 
 | Role | Description |
 |---|---|
-| **Admin** (the author) | Not an app role — just whoever has push access to the repo. Updates source data by committing new/changed files under `data/` and pushing; CI does the rest. No admin UI, no in-app admin permission to build or secure. |
-| **Student** | Logs in via Google OAuth, browses the shared module catalog, selects their modules, views their personal calendar. Any authenticated user — no school-issued identity required. |
+| **Admin** (the author) | Not an app role — just whoever has push access to the repo. Updates source data by committing new/changed files under `data/` and pushing; the next Vercel build regenerates the static dataset. No admin UI, no in-app admin permission to build or secure. |
+| **Student** | Logs in via Clerk (Google OAuth), browses the catalog, selects their modules, views their personal calendar. Any authenticated user — no school-issued identity required. |
 | **Anonymous** | Sees a login/landing page only; the catalog and calendar require login (simplest single permission model for v1 — easy to relax later if open browsing turns out to be wanted). |
 
 ## 5. Source data — model derived from the provided assets
 
-Three source files were inspected directly (`assets/`):
+Three source files were inspected directly (now under `data/AY26-27/`):
 
 ### 5.1 Module catalog workbook (`AY26-27_timetable_Reg-D_filter_function.xlsx`)
 
@@ -119,8 +126,8 @@ dates while its default venue montage looks unusually specific — needs
 confirmation from the user whether this is really just 3 room-change dates
 within an otherwise-weekly-recurring module, or whether for some modules the
 listed dates are the *only* occurrences (non-weekly). Treat as a per-row data
-quality check during ingestion (flag anomalies rather than silently trusting
-the "always weekly" assumption) rather than a schema question.
+quality check during the data build (flag anomalies rather than silently
+trusting the "always weekly" assumption) rather than a schema question.
 
 ### 5.3 Academic calendar (`AY26-27_dates_MSE_Reg-D_V1.pdf`)
 
@@ -137,71 +144,80 @@ date, and a free-text comment, e.g.:
 
 This defines the **non-lecture overlay** independent of any specific module:
 which weeks are normal teaching weeks vs. holiday/lecture-free/exam weeks.
+It's re-keyed by hand, once a year, into a small structured JSON/CSV file
+alongside the xlsx sources under `data/` — see §8.3.
 
 ## 6. Functional requirements
 
-### 6.1 Data ingestion (git-driven, no admin UI)
+### 6.1 Data build (Vercel build-time, no database, no CI pipeline)
 
-Source files live in the repo (e.g. `data/<academic-year>/...`), the same way
-`assets/` holds them today. Updating the timetable means replacing/adding
-files there and pushing — a GitHub Actions workflow (triggered on push to
-`main` when files under `data/` change) runs the `packages/ingestion` CLI
-against the production database using a repo secret (`DATABASE_URL`). There
-is no in-app admin UI and no manually-run local CLI step required — "admin"
-capability is just "has push access to the repo," which GitHub already gates.
+Source files live in the repo under `data/<academic-year>/` (as they do
+today). Updating the timetable means replacing/adding files there and
+pushing — nothing else. A `prebuild` script (part of `apps/web`'s normal
+`next build`) reads everything under `data/`, parses it, and writes a static
+JSON dataset that the app imports directly. Because Vercel already rebuilds
+and redeploys on every push to `main`, this is the *entire* update mechanism
+— no GitHub Actions workflow, no database, no secrets to manage.
 
-- FR1: A GitHub Actions workflow re-runs ingestion automatically whenever a
-  push to `main` changes files under `data/`.
-- FR2: Ingestion parses a module-catalog workbook, a semester-timetable
-  workbook, and a small hand-maintained academic-calendar JSON/CSV (re-keyed
+- FR1: The static dataset is regenerated automatically on every build,
+  driven only by whatever is currently committed under `data/`.
+- FR2: The data build parses a module-catalog workbook, a semester-timetable
+  workbook, and the hand-maintained academic-calendar JSON/CSV (re-keyed
   once/year from the school's PDF — see §8.3) for a given academic year +
   semester.
-- FR3: Ingestion is idempotent — re-running it for the same semester
-  replaces/updates existing data without creating duplicates (safe to push a
-  corrected file and re-trigger).
-- FR4: Ingestion validates and reports anomalies (e.g. unknown weekday,
+- FR3: The data build is deterministic and idempotent — running it twice
+  against the same source files produces the same output; there's no
+  persisted state to accumulate or duplicate.
+- FR4: The data build validates and reports anomalies (e.g. unknown weekday,
   unparseable time slot, module code not found in catalog, exception date
-  outside the semester's date range) by failing the CI run with a clear
-  error, rather than silently importing bad data.
-- FR5: Ingestion materializes concrete calendar sessions (one row per actual
-  date/session, not just the weekly template) at import time — see §8.1.
-- FR5a: The CI workflow can also be run manually (`workflow_dispatch`) to
-  re-import without needing a data-file change, e.g. after fixing a bug in
-  the ingestion code itself.
+  outside the semester's date range) by **failing the build** with a clear
+  error, rather than silently shipping bad data.
+- FR5: The data build materializes concrete sessions (one entry per actual
+  date/session, not just the weekly template) — see §8.1.
 
 ### 6.2 Authentication
 
-- FR6: A user logs in with Google OAuth (self-hosted Auth.js) — the only
+- FR6: A user logs in with Google OAuth via Clerk (hosted) — the only
   sign-in method for v1.
-- FR7: A logged-in user's module selection persists across sessions/devices.
+- FR7: A logged-in user's module selection persists across sessions/devices
+  by living on their Clerk account (`unsafeMetadata`), not in app-owned
+  storage.
 
 ### 6.3 Catalog browsing & selection
 
-- FR9: Any logged-in user can browse the full module catalog (searchable/
-  filterable by specialization profile, term, module-code prefix, weekday).
-- FR10: A user can select/deselect modules as "mine" for a given academic
+- FR8: Any logged-in user can browse the full module catalog, entirely
+  client-side against the static dataset already shipped with the page
+  (searchable/filterable by specialization profile, term, module-code
+  prefix, weekday).
+- FR9: A user can select/deselect modules as "mine" for a given academic
   year + semester; the app should warn (not necessarily block) on detected
   time conflicts between two selected modules.
-- FR11: Selection is scoped per semester so a user's AUT26-27 picks don't
-  bleed into SPR27.
+- FR10: Selection is scoped per semester so a user's AUT26-27 picks don't
+  bleed into SPR27 — stored as a small structured value (e.g.
+  `{ "AUT26-27": ["FTP_MachLe_A", ...] }`) in the user's Clerk metadata.
 
 ### 6.4 Personal calendar
 
-- FR12: Month view — shows days with any session/holiday/exam marker;
+- FR11: Month view — shows days with any session/holiday/exam marker;
   clicking/expanding a day shows its sessions.
-- FR13: Week view — shows time-gridded sessions Mon–Fri (or Mon–Sun) for the
+- FR12: Week view — shows time-gridded sessions Mon–Fri (or Mon–Sun) for the
   selected week, with room/venue and lesson type visible.
-- FR14: Day view — full detail for one day.
-- FR15: All three views render, using the same underlying session data:
+- FR13: Day view — full detail for one day.
+- FR14: All three views render, using the same underlying session data:
   regular lecture/tutorial blocks, holiday/lecture-free days (visually
   distinct, non-clickable/informational), and exam-session windows (visually
   distinct, tied to the modules the user actually selected where the data
   allows that association — otherwise shown as a general "exam period"
   banner).
-- FR16: All times displayed in Europe/Zurich local time.
+- FR15: All times displayed in Europe/Zurich local time.
 
-## 7. Data model (conceptual, engine-agnostic — final schema is an implementation task)
+## 7. Data model (shape of the generated static dataset + Clerk account data — not database tables)
 
+Everything below is either (a) part of the single static JSON produced by
+the data build and shipped with the page, or (b) a value stored in Clerk's
+per-user metadata. There are no application-owned database tables in v1.
+
+**Static dataset (per academic year):**
 - `AcademicYear` (e.g. "26-27")
 - `Semester` (year, term `AUT`/`SPR`, date range)
 - `CalendarWeek` (semester, iso week no., mon date, fri date, week type:
@@ -211,147 +227,150 @@ capability is just "has push access to the repo," which GitHub already gates.
 - `Module` (code, number, title, prefix `CM`/`FTP`/`TSM`, multi-execution
   group key linking `_A`/`_B` variants)
 - `ModuleOffering` (module, semester, mode/location, per-profile priority map)
-- `SessionSeries` (module, semester, weekday, lesson type, time slot(s),
-  default venue/room, mode) — the weekly template
-- `Session` (materialized: session series ref, concrete date, start/end time,
-  actual venue/room for that date — pre-resolved against exceptions and
-  against calendar-week type)
-- `User` (id/email from auth provider — no in-app role; everyone is a "student" for permission purposes)
-- `UserSelection` (user, semester, set of module codes)
+- `Session` (materialized: module, concrete date, start/end time, lesson
+  type, actual venue/room for that date — pre-resolved against exceptions
+  and against calendar-week type)
 
-## 8. Key technical decisions (resolved, after research)
+**Per-user account data (Clerk `unsafeMetadata`):**
+- `selectedModules`: `{ [semesterKey: string]: string[] }` — the only piece
+  of state the app itself is responsible for persisting, and it's persisted
+  by the auth provider, not a database the app operates.
+
+## 8. Key technical decisions (resolved, after research + user review)
 
 Three research passes (recurring-event data modeling + calendar UI +
 ingestion tooling; frontend hosting/DNS + monorepo architecture; auth + DB +
-homelab hosting) landed on the following. Rationale kept short here — full
-comparison tables live in the research summaries; ask if you want them
-reconstructed into an appendix.
+homelab hosting) fed an initial design, which the user then simplified after
+reviewing it — the simplification is what's recorded below.
 
-1. **Recurring session storage — materialize at import time.** Each module
-   row is expanded into one concrete `Session` row per real date across the
-   semester's ~14 teaching weeks (~80 modules × ~14 weeks ≈ ~1,100 rows/
-   semester), applying room-change overrides and tagging weeks the academic
-   calendar marks as holiday/exam/lecture-free. Rejected an RRULE-at-read-time
-   approach (`rrule` npm package): the source data has no true "exception"
-   semantics (only room changes, no cancellations), and holiday/exam weeks
-   live in a separate document — you'd still merge three data sources on
-   every render. Materializing makes every view a plain date-range query, no
-   recurrence math in the request path. If ICS export is ever wanted, generate
-   it *from* the materialized rows.
+1. **Recurring session storage — materialize at data-build time, into the
+   static dataset.** Each module row is expanded into one concrete `Session`
+   entry per real date across the semester's ~14 teaching weeks (~80 modules
+   × ~14 weeks ≈ ~1,100 entries/semester — comfortably small for a static
+   JSON bundled with the page), applying room-change overrides and tagging
+   weeks the academic calendar marks as holiday/exam/lecture-free. Rejected
+   an RRULE-at-read-time approach (`rrule` npm package): the source data has
+   no true "exception" semantics (only room changes, no cancellations), and
+   holiday/exam weeks live in a separate document — you'd still merge three
+   data sources on every render for no benefit at this scale.
 2. **Calendar UI — `react-big-calendar`** with a `date-fns` localizer. Fully
    MIT (no paywalled premium views, unlike FullCalendar's resource/timeline
    views), mature, and a community shadcn-themed wrapper exists to match the
    rest of the UI. `schedule-x` is a credible lighter-weight alternative worth
    a spike if styling friction shows up; a fully custom date-fns grid remains
    an option given how simple the requirements are (read-only, no drag/drop).
-3. **PDF calendar ingestion — manual re-keying, not automated extraction.**
-   The academic calendar is ~50 rows, updated once per academic year, with a
-   layout (rotated header, merged cells) that isn't worth building a table-
-   extraction pipeline for. Re-key it once a year into a small structured
-   JSON/CSV that the ingestion package reads like any other source file.
-4. **Auth — self-hosted Auth.js (NextAuth) with Google OAuth only**,
-   sessions/users stored in the same Postgres via Drizzle. Rejected hosted
-   providers (Auth0/Clerk/Supabase Auth/Firebase Auth) as the *default* —
-   their free tiers are all generous enough (25k-50k MAU) that limits are
-   moot at "tens of users," so the real trade-off is vendor count, not cost.
-   Self-hosting avoids an extra account/dashboard and keeps user data
-   alongside the app's own data. Swapping to Clerk later is a contained
-   change if a hosted drop-in UI ever becomes more valuable than the
-   simplicity. Google-only keeps the sign-in surface to one button; no
-   email-sending infrastructure needed.
-5. **Database — Neon (managed Postgres, free tier).** Purpose-built for the
-   Vercel-serverless-functions pattern (HTTP/WebSocket driver + built-in
-   connection pooling), scales to zero on idle with fast resume (vs.
-   Supabase's harder 7-day pause). Fallback: self-host Postgres on the
-   homelab k3s cluster via the CloudNativePG operator (single-namespace mode)
-   if the project outgrows Neon's free tier or data sovereignty becomes a
-   priority — expose it via Cloudflare Tunnel (outbound-only, no port-
-   forwarding) rather than Tailscale Funnel (better suited to private/admin
-   access than a public app endpoint).
-6. **Backend — Next.js Route Handlers only.** No separate API service; at
-   this scale a standalone backend would be pure overhead. Revisit only if
-   self-hosting on k3s ever makes a separate service more natural.
+3. **Academic calendar ingestion — manual re-keying, not automated PDF
+   extraction.** The academic calendar is ~50 rows, updated once per academic
+   year, with a layout (rotated header, merged cells) that isn't worth
+   building a table-extraction pipeline for. Re-key it once a year into a
+   small structured JSON/CSV that the data build reads like any other source
+   file.
+4. **Auth — Clerk, hosted, Google OAuth.** Rejected self-hosting the
+   session/login logic (e.g. Auth.js against an app-owned database): the
+   user wants auth handed off entirely to a managed vendor, the same way
+   Auth0 would, with zero ongoing code or infrastructure to own. Clerk's
+   free tier comfortably covers "tens of users," and its client-writable
+   `unsafeMetadata` is the deciding factor over Auth0 — it lets the browser
+   persist a user's module selection directly to their account without any
+   server-side code, whereas Auth0's equivalent (its Management API) isn't
+   safe to call from the browser and would need a backend route as a proxy.
+5. **No database.** The catalog/sessions are read-only, decided once per
+   semester by the school, and never modified by users — so there is nothing
+   that needs a live datastore. The one piece of genuinely dynamic,
+   per-user state (which modules someone picked) is small enough to live as
+   metadata on their Clerk account instead. This removes Neon/Postgres,
+   Drizzle, and the homelab-k3s fallback entirely from this project's scope
+   — the homelab remains available for a *future* MSE tool that actually
+   needs a live database, but isn't needed here.
+6. **Backend — none beyond what Next.js itself provides.** No Route
+   Handlers are required for core functionality (catalog and calendar are
+   static + client-side; selection read/write goes straight from the
+   browser to Clerk). A thin Route Handler may be added later purely to
+   validate a selection's module codes against the current catalog before
+   it's saved, if that turns out to be worth the extra code — not required
+   for v1.
 7. **Repo structure — pnpm workspace, no Turborepo (yet).** Turborepo's value
    (remote caching, cross-package task orchestration) doesn't pay for itself
    at 2-3 packages built by one person; add it later if build times start to
    annoy. Structure:
    ```
-   timetable/
-     apps/web/          # Next.js app (App Router)
-     packages/ingestion/ # CLI: xlsx/JSON parsing -> validated data -> Postgres loader
-     packages/shared/    # Zod schemas + inferred TS types + Drizzle schema/db client
+   mse-timetable/
+     apps/web/            # Next.js app (App Router), incl. the prebuild data-build step
+     packages/data-build/  # parses data/ sources -> validated static JSON (no DB writes)
+     packages/shared/       # Zod schemas + inferred TS types, used by both
    ```
-   `packages/shared` is the single contract both `ingestion` (validating
-   parsed rows before insert) and `web` (validating API responses/forms)
-   depend on. ORM: **Drizzle** over Prisma — TS-native schema with no codegen
-   step, lighter footprint, matches a small hand-written schema well.
+   `packages/shared` is the single contract both `data-build` (validating
+   parsed rows) and `web` (validating the generated dataset, and user
+   selections against it) depend on.
 8. **DNS/hosting — plain Vercel + a CNAME record at Infomaniak.** Add the
-   subdomain `timetable.hajir.ch` as a Vercel project domain, then add
-   the CNAME Vercel gives you at Infomaniak's DNS zone for `hajir.ch` — no
-   nameserver migration, rest of the domain (email, other subdomains)
-   untouched. Skip Cloudflare: it adds a vendor with no real benefit here
-   (proxying in front of Vercel causes cert/caching conflicts; DNS-only mode
-   duplicates what Infomaniak already does).
-9. **Data import trigger — git push, not an admin UI or manual CLI run.**
-   The user's preference: updating the timetable should be "commit new/
-   changed files, push" — nothing more. So source files live under `data/`
-   in the repo, and a GitHub Actions workflow watches that path and re-runs
-   `packages/ingestion` against the production Postgres (Neon) on every push
-   to `main` that touches it, using a `DATABASE_URL` repo secret. This also
-   removes any need for an in-app admin role/permission system — "who can
-   update the data" is just "who has push access to the repo," which GitHub
-   already handles.
+   subdomain `timetable.mse.hajir.ch` as a Vercel project domain, then add
+   the CNAME Vercel gives you at Infomaniak's DNS zone for `hajir.ch` — this
+   is just one more record in the existing zone; `mse.hajir.ch` doesn't need
+   to exist as its own delegated zone first, and no nameserver migration is
+   needed. Confirmed Infomaniak's own Node.js hosting is a paid product
+   (30-day free trial only, credit card required) and not Next.js-native —
+   so it's used purely as the domain registrar/DNS host, not app hosting.
+   Skip Cloudflare: it adds a vendor with no real benefit here (proxying in
+   front of Vercel causes cert/caching conflicts; DNS-only mode duplicates
+   what Infomaniak already does).
+9. **Data updates — git push only.** Updating the timetable means commit
+   new/changed files under `data/`, push to `main`. Vercel's existing
+   auto-deploy-on-push already rebuilds the app on every push, and the data
+   build (§8.1) is just part of that normal build — so there is nothing
+   extra to configure: no GitHub Actions workflow, no repo secrets, no
+   database migration to run. "Who can update the data" is just "who has
+   push access to the repo."
 
 ## 9. Decisions made / remaining defaults
 
 Resolved with the user: repo name `mse-timetable` (public, personal account
-`hajir3`), auth = Google OAuth only, data import = git push + CI (§8.9).
+`hajir3`), auth = Clerk + Google OAuth, no database, data updates = git push
+only, subdomain = `timetable.mse.hajir.ch`.
 
 Remaining items were defaulted to keep v1 scope small; all are easy,
 contained changes later if they turn out wrong:
 
-- **Subdomain**: `timetable.hajir.ch`.
 - **Anonymous browsing**: not allowed — login required to see the catalog or
   any calendar (§4).
 - **Social/collaborative features** (e.g. seeing which classmates picked a
   module): out of scope for v1 (§3).
 - **Expected user count**: assumed "tens of users" throughout — comfortably
-  within every option's free tier, not a decision that changes the
+  within Clerk's and Vercel's free tiers, not a decision that changes the
   architecture.
 
 ## 10. High-level architecture (final, per §8)
 
 - **Frontend**: Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
   + `react-big-calendar` (date-fns localizer), deployed on Vercel with
-  auto-deploy from GitHub.
-- **Auth**: self-hosted Auth.js (NextAuth), Google OAuth, Drizzle adapter
-  against the app's own Postgres — no third-party auth vendor.
-- **Backend**: Next.js Route Handlers as the only API layer.
-- **Database**: Neon (managed serverless Postgres, free tier), accessed via
-  Drizzle ORM. Fallback: self-hosted Postgres via CloudNativePG on the
-  homelab k3s cluster (dedicated namespace), exposed through a Cloudflare
-  Tunnel — only if Neon's free tier is outgrown.
-- **Ingestion**: a standalone TypeScript CLI package (`packages/ingestion`)
-  using `exceljs` to parse the two xlsx sources plus a small hand-maintained
-  JSON/CSV for the academic calendar (re-keyed once/year from the PDF),
-  validating everything against Zod schemas shared with the web app
-  (`packages/shared`), then writing materialized `Session` rows to Postgres.
-  Triggered by a GitHub Actions workflow on push to `main` when `data/`
-  changes (§8.9) — not a manually-run local script, not an in-app admin UI.
-- **Repo layout**: pnpm workspace, `apps/web` + `packages/ingestion` +
+  auto-deploy from GitHub. This is the entire hosting footprint — no server,
+  no database.
+- **Auth + persistence**: Clerk (hosted), Google OAuth. Each user's selected
+  modules live in their own Clerk account metadata, read/written directly
+  from the browser via Clerk's client SDK.
+- **Backend**: none required for v1; Next.js Route Handlers only if/when a
+  specific need (e.g. selection validation) justifies one.
+- **Data build**: a TypeScript package (`packages/data-build`) using
+  `exceljs` to parse the two xlsx sources plus the hand-maintained
+  JSON/CSV academic calendar, validated against Zod schemas shared with the
+  web app (`packages/shared`), producing one static JSON dataset consumed by
+  the app. Runs as part of `apps/web`'s own build (`prebuild` step) —
+  triggered automatically by Vercel's existing deploy-on-push, no separate
+  CI system.
+- **Repo layout**: pnpm workspace, `apps/web` + `packages/data-build` +
   `packages/shared` (no Turborepo initially).
-- **DNS**: a CNAME for a subdomain of `hajir.ch` (registrar: Infomaniak)
+- **DNS**: a CNAME for `timetable.mse.hajir.ch` (registrar: Infomaniak)
   pointed at Vercel; no nameserver migration, no Cloudflare.
 
 ## 11. Success criteria (v1 "done")
 
 - Admin can roll out a new semester by committing the two xlsx files (plus
-  the calendar data) under `data/` and pushing — CI does the rest, well
-  under an hour of manual effort.
+  the calendar data) under `data/` and pushing — the next Vercel deploy
+  picks it up automatically, no other step.
 - A student can log in, select their modules once, and thereafter just check
-  their calendar — no re-entry needed until the next semester.
+  their calendar — no re-entry needed until the next semester, and it
+  follows them to any device they log into.
 - Month/week/day views correctly reflect room-change exceptions and clearly
   distinguish holidays/lecture-free days and exam-session windows from
   regular teaching sessions.
-- Running cost: $0/month, or a documented, deliberate exception if the
-  homelab-hosted path is chosen instead.
+- Running cost: $0/month — no database, no server, no paid tier on Vercel or
+  Clerk required at this scale.
