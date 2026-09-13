@@ -108,7 +108,17 @@ export function WeekBucketView({
           legibility — the outer overflow-x-auto lets a narrow phone scroll
           sideways through the remaining days instead. */}
       <div className="overflow-x-auto rounded-md border">
-        <div className="grid grid-cols-[80px_repeat(5,1fr)] gap-px bg-border portrait:grid-cols-[52px_repeat(5,minmax(92px,1fr))]">
+        {/* portrait:w-fit is the actual fix here: without it, this grid's
+            own box stays at its parent's (100vw-ish) width while its
+            minmax-floored columns force the rendered content wider still —
+            the mismatch means this element's own bg-border background (the
+            grid-line trick) only paints within the narrower nominal width,
+            leaving the genuinely-overflowing columns with no background/
+            lines at all once scrolled into view. Sizing the grid to its own
+            content keeps its background in sync with what's actually drawn.
+            Landscape doesn't need this — its plain 1fr columns (no minmax
+            floor) just shrink to fit, so it never actually overflows. */}
+        <div className="grid grid-cols-[80px_repeat(5,1fr)] gap-px bg-border portrait:w-fit portrait:grid-cols-[52px_repeat(5,minmax(92px,1fr))]">
           <div className="bg-background" />
           {weekDates.map((d, i) => (
             <div key={i} className="bg-background p-2 text-center text-sm font-semibold portrait:p-1.5 portrait:text-xs">
