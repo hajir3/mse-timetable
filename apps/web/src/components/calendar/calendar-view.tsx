@@ -6,6 +6,7 @@ import { dataset } from "@/lib/dataset";
 import { useSelectedModules } from "@/lib/selection";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WeekBucketView } from "./week-bucket-view";
 import { MonthGridView } from "./month-grid-view";
@@ -59,7 +60,7 @@ export function CalendarView({ subscribeUrl }: { subscribeUrl: string | null }) 
 
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Tabs value={semesterKey} onValueChange={(v) => setSemesterKey(v as string)}>
           <TabsList>
             {dataset.semesters.map((s) => (
@@ -69,7 +70,20 @@ export function CalendarView({ subscribeUrl }: { subscribeUrl: string | null }) 
             ))}
           </TabsList>
         </Tabs>
-        {subscribeUrl && <SubscribeCalendarButton url={subscribeUrl} />}
+        {subscribeUrl && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<a href={subscribeUrl} download="mse-timetable.ics" />}
+            >
+              <Download />
+              Download .ics
+            </Button>
+            <SubscribeCalendarButton url={subscribeUrl} />
+          </div>
+        )}
       </div>
 
       {/* Landscape: one row, three groups spaced with justify-between (as
