@@ -214,11 +214,12 @@ and redeploys on every push to `main`, this is the *entire* update mechanism
   view. The Block row (for intensive block-format courses with no fixed
   weekday) is always empty in this data but still rendered, for parity with
   the official tool.
-- FR13: Day view — the one view still backed by react-big-calendar, since a
-  real time-proportional grid earns its keep here: full detail for one day,
-  each lesson-type part (lecture, tutorial 1, tutorial 2, ...) shown
-  separately with exact times, trimmed to the dataset's actual earliest
-  start / latest end.
+- FR13: Day view — also custom-built (no time-axis grid or hour-label
+  gutter at all): a plain chronological list of the day's sessions, each
+  lesson-type part (lecture, tutorial 1, tutorial 2, ...) shown as its own
+  self-describing card — time range, module code, then room (or "Online"
+  for online-mode sessions) — rather than relying on vertical position on a
+  shared time axis to convey when something is.
 - FR13a: Course blocks in all three views are color-coded by module type
   (CM/FTP/TSM) — orange for TSM, indigo for FTP, emerald for CM — matching
   the official tool's per-type coloring convention.
@@ -273,12 +274,17 @@ reviewing it — the simplification is what's recorded below.
    no true "exception" semantics (only room changes, no cancellations), and
    holiday/exam weeks live in a separate document — you'd still merge three
    data sources on every render for no benefit at this scale.
-2. **Calendar UI — `react-big-calendar`** with a `date-fns` localizer. Fully
-   MIT (no paywalled premium views, unlike FullCalendar's resource/timeline
-   views), mature, and a community shadcn-themed wrapper exists to match the
-   rest of the UI. `schedule-x` is a credible lighter-weight alternative worth
-   a spike if styling friction shows up; a fully custom date-fns grid remains
-   an option given how simple the requirements are (read-only, no drag/drop).
+2. **Calendar UI — fully custom, no calendar library.** Started on
+   `react-big-calendar` with a `date-fns` localizer; dropped entirely after
+   the views diverged from what it's built for. Month and Week both needed
+   layouts react-big-calendar can't safely produce (a Monday-Friday-only
+   month grid — its event blocks hardcode 1/7-width percentages that
+   misalign against 5 columns; a Morning/Afternoon/Evening bucket grid
+   instead of clock time), and Day view was asked to drop the time-axis
+   gutter for a plain chronological card list. With all three views custom
+   either way, the dependency stopped earning its keep. Each view is its own
+   small component (`month-grid-view.tsx`, `week-bucket-view.tsx`,
+   `day-agenda-view.tsx`) driven directly by the static dataset.
 3. **Academic calendar ingestion — manual re-keying, not automated PDF
    extraction.** The academic calendar is ~50 rows, updated once per academic
    year, with a layout (rotated header, merged cells) that isn't worth
@@ -360,10 +366,12 @@ contained changes later if they turn out wrong:
 
 ## 10. High-level architecture (final, per §8)
 
-- **Frontend**: Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
-  + `react-big-calendar` (date-fns localizer), deployed on Vercel with
-  auto-deploy from GitHub. This is the entire hosting footprint — no server,
-  no database.
+- **Frontend**: Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui,
+  deployed on Vercel with auto-deploy from GitHub. This is the entire
+  hosting footprint — no server, no database.
+- **Calendar views**: fully custom (no calendar library) — Month and Week
+  views are Monday-Friday grids, Day view is a chronological card list; see
+  §8.2.
 - **Auth + persistence**: Clerk (hosted), Google OAuth. Each user's selected
   modules live in their own Clerk account metadata, read/written directly
   from the browser via Clerk's client SDK.

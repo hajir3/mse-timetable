@@ -21,18 +21,24 @@ navigate and contribute correctly.
 - **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui.
   Deployed on Vercel, auto-deploy from `main`. This is the entire hosting
   footprint.
-- **Calendar views**: Month and Week are custom-built grids
-  (`month-grid-view.tsx`, `week-bucket-view.tsx`) — Monday-Friday only, one
-  aggregated block per course per day, color-coded by module type
-  (`lib/module-colors.ts`: orange=TSM, indigo=FTP, emerald=CM). Day view is
-  the one place still using `react-big-calendar` (date-fns localizer), since
-  a real time-proportional grid is worth it there. Don't try to make
-  react-big-calendar's month view Mon-Fri-only — its event blocks hardcode
-  1/7-width percentages that misalign against a 5-column grid; this was
-  tested and confirmed before building the custom grids instead. Week view
-  is deliberately not a clock-time grid at all — it mirrors the school's own
-  official module-selection tool: weekday × Morning/Afternoon/Evening/Block,
-  using the timetable workbook's own time-of-day column.
+- **Calendar views — all three fully custom, no calendar library.** Started
+  on `react-big-calendar`, removed entirely once all three views diverged
+  from what it's built for:
+  - `month-grid-view.tsx` — Monday-Friday grid, one aggregated block per
+    course per day. Don't try to build this on react-big-calendar's month
+    view instead — its event blocks hardcode 1/7-width percentages that
+    misalign against a 5-column grid; tested and confirmed before writing
+    a custom grid.
+  - `week-bucket-view.tsx` — deliberately not a clock-time grid at all: a
+    weekday × Morning/Afternoon/Evening/Block grid mirroring the school's
+    own official module-selection tool, using the timetable workbook's own
+    time-of-day column. Each course card is `flex-1` so it fills its whole
+    section height.
+  - `day-agenda-view.tsx` — a plain chronological card list, no time-axis
+    gutter; each card is self-describing (time, module code, then room —
+    or "Online" for online-mode sessions).
+  - All three color-code by module type via `lib/module-colors.ts`
+    (orange=TSM, indigo=FTP, emerald=CM).
 - **Auth + persistence**: **Clerk**, hosted, Google OAuth only. Each user's
   selected modules are stored as metadata on their own Clerk account
   (`unsafeMetadata`), read/written directly from the browser via Clerk's
