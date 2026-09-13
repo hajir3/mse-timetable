@@ -1,0 +1,659 @@
+{
+  "academicYear": "AY26-27",
+  "region": "Region D (Zurich)",
+  "source": "AY26-27_dates_MSE_Reg-D_V1.pdf (status as of 11.11.2025)",
+  "semesters": {
+    "AUT26-27": {
+      "label": "Autumn semester 2026-2027",
+      "start": "2026-09-14",
+      "end": "2027-02-19"
+    },
+    "SPR27": {
+      "label": "Spring semester 2027",
+      "start": "2027-02-22",
+      "end": "2027-09-17"
+    }
+  },
+  "weeks": [
+    {
+      "weekNumber": 38,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18",
+      "semester": "AUT26-27",
+      "tags": [
+        "semester-start"
+      ],
+      "comment": "start of the autumn semester",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 39,
+      "weekStart": "2026-09-21",
+      "weekEnd": "2026-09-25",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 40,
+      "weekStart": "2026-09-28",
+      "weekEnd": "2026-10-02",
+      "semester": "AUT26-27",
+      "tags": [
+        "viewing-session"
+      ],
+      "comment": "",
+      "studentNote": "viewing session of the exams"
+    },
+    {
+      "weekNumber": 41,
+      "weekStart": "2026-10-05",
+      "weekEnd": "2026-10-09",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 42,
+      "weekStart": "2026-10-12",
+      "weekEnd": "2026-10-16",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 43,
+      "weekStart": "2026-10-19",
+      "weekEnd": "2026-10-23",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 44,
+      "weekStart": "2026-10-26",
+      "weekEnd": "2026-10-30",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 45,
+      "weekStart": "2026-11-02",
+      "weekEnd": "2026-11-06",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 46,
+      "weekStart": "2026-11-09",
+      "weekEnd": "2026-11-13",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 47,
+      "weekStart": "2026-11-16",
+      "weekEnd": "2026-11-20",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 48,
+      "weekStart": "2026-11-23",
+      "weekEnd": "2026-11-27",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 49,
+      "weekStart": "2026-11-30",
+      "weekEnd": "2026-12-04",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 50,
+      "weekStart": "2026-12-07",
+      "weekEnd": "2026-12-11",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 51,
+      "weekStart": "2026-12-14",
+      "weekEnd": "2026-12-18",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 52,
+      "weekStart": "2026-12-21",
+      "weekEnd": "2026-12-25",
+      "semester": "AUT26-27",
+      "tags": [
+        "holiday"
+      ],
+      "comment": "holidays",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 53,
+      "weekStart": "2026-12-28",
+      "weekEnd": "2027-01-01",
+      "semester": "AUT26-27",
+      "tags": [
+        "holiday"
+      ],
+      "comment": "holidays",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 1,
+      "weekStart": "2027-01-04",
+      "weekEnd": "2027-01-08",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 2,
+      "weekStart": "2027-01-11",
+      "weekEnd": "2027-01-15",
+      "semester": "AUT26-27",
+      "tags": [
+        "lecture-free"
+      ],
+      "comment": "lecture-free period",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 3,
+      "weekStart": "2027-01-18",
+      "weekEnd": "2027-01-22",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 4,
+      "weekStart": "2027-01-25",
+      "weekEnd": "2027-01-29",
+      "semester": "AUT26-27",
+      "tags": [
+        "exam-regular"
+      ],
+      "comment": "Friday: regular exam session autumn modules*1*",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 5,
+      "weekStart": "2027-02-01",
+      "weekEnd": "2027-02-05",
+      "semester": "AUT26-27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 6,
+      "weekStart": "2027-02-08",
+      "weekEnd": "2027-02-12",
+      "semester": "AUT26-27",
+      "tags": [
+        "exam-regular"
+      ],
+      "comment": "regular exam session autumn modules*1*",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 7,
+      "weekStart": "2027-02-15",
+      "weekEnd": "2027-02-19",
+      "semester": "AUT26-27",
+      "tags": [
+        "holiday"
+      ],
+      "comment": "holidays",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 8,
+      "weekStart": "2027-02-22",
+      "weekEnd": "2027-02-26",
+      "semester": "SPR27",
+      "tags": [
+        "semester-start"
+      ],
+      "comment": "start of the spring semester",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 9,
+      "weekStart": "2027-03-01",
+      "weekEnd": "2027-03-05",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 10,
+      "weekStart": "2027-03-08",
+      "weekEnd": "2027-03-12",
+      "semester": "SPR27",
+      "tags": [
+        "viewing-session"
+      ],
+      "comment": "",
+      "studentNote": "viewing session of the exams"
+    },
+    {
+      "weekNumber": 11,
+      "weekStart": "2027-03-15",
+      "weekEnd": "2027-03-19",
+      "semester": "SPR27",
+      "tags": [
+        "viewing-session"
+      ],
+      "comment": "",
+      "studentNote": "viewing session of the exams"
+    },
+    {
+      "weekNumber": 12,
+      "weekStart": "2027-03-22",
+      "weekEnd": "2027-03-26",
+      "semester": "SPR27",
+      "tags": [
+        "partial-holiday"
+      ],
+      "comment": "holiday: Easter Friday 26.03. - incl. Wednesday 31.03.2027",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 13,
+      "weekStart": "2027-03-29",
+      "weekEnd": "2027-04-02",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 14,
+      "weekStart": "2027-04-05",
+      "weekEnd": "2027-04-09",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 15,
+      "weekStart": "2027-04-12",
+      "weekEnd": "2027-04-16",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 16,
+      "weekStart": "2027-04-19",
+      "weekEnd": "2027-04-23",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 17,
+      "weekStart": "2027-04-26",
+      "weekEnd": "2027-04-30",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 18,
+      "weekStart": "2027-05-03",
+      "weekEnd": "2027-05-07",
+      "semester": "SPR27",
+      "tags": [
+        "partial-holiday"
+      ],
+      "comment": "lecture-free: Thursday, 06.05.2027 Ascenscion Day",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 19,
+      "weekStart": "2027-05-10",
+      "weekEnd": "2027-05-14",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 20,
+      "weekStart": "2027-05-17",
+      "weekEnd": "2027-05-21",
+      "semester": "SPR27",
+      "tags": [
+        "partial-holiday"
+      ],
+      "comment": "lecture-free: Monday, 17.05.2027 Pentecost*",
+      "studentNote": "*Attention: Compensation on Monday 07.06.2027"
+    },
+    {
+      "weekNumber": 21,
+      "weekStart": "2027-05-24",
+      "weekEnd": "2027-05-28",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 22,
+      "weekStart": "2027-05-31",
+      "weekEnd": "2027-06-04",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 23,
+      "weekStart": "2027-06-07",
+      "weekEnd": "2027-06-11",
+      "semester": "SPR27",
+      "tags": [
+        "compensation-day"
+      ],
+      "comment": "Compensation on 07.06.2027 for 17.05.2027",
+      "studentNote": "details are provided in the timetable of the semester"
+    },
+    {
+      "weekNumber": 24,
+      "weekStart": "2027-06-14",
+      "weekEnd": "2027-06-18",
+      "semester": "SPR27",
+      "tags": [
+        "lecture-free"
+      ],
+      "comment": "lecture-free period",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 25,
+      "weekStart": "2027-06-21",
+      "weekEnd": "2027-06-25",
+      "semester": "SPR27",
+      "tags": [
+        "exam-resit",
+        "exam-regular"
+      ],
+      "comment": "resit exam session autumn modules *2* / Friday: regular exam session spring modules*1*",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 26,
+      "weekStart": "2027-06-28",
+      "weekEnd": "2027-07-02",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 27,
+      "weekStart": "2027-07-05",
+      "weekEnd": "2027-07-09",
+      "semester": "SPR27",
+      "tags": [
+        "exam-regular"
+      ],
+      "comment": "regular exam session spring modules*1*",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 28,
+      "weekStart": "2027-07-12",
+      "weekEnd": "2027-07-16",
+      "semester": "SPR27",
+      "tags": [
+        "lecture-free"
+      ],
+      "comment": "lecture-free period",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 29,
+      "weekStart": "2027-07-19",
+      "weekEnd": "2027-07-23",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 30,
+      "weekStart": "2027-07-26",
+      "weekEnd": "2027-07-30",
+      "semester": "SPR27",
+      "tags": [
+        "holiday"
+      ],
+      "comment": "holidays",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 31,
+      "weekStart": "2027-08-02",
+      "weekEnd": "2027-08-06",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 32,
+      "weekStart": "2027-08-09",
+      "weekEnd": "2027-08-13",
+      "semester": "SPR27",
+      "tags": [
+        "viewing-session"
+      ],
+      "comment": "",
+      "studentNote": "viewing session of the exams"
+    },
+    {
+      "weekNumber": 33,
+      "weekStart": "2027-08-16",
+      "weekEnd": "2027-08-20",
+      "semester": "SPR27",
+      "tags": [
+        "viewing-session"
+      ],
+      "comment": "",
+      "studentNote": "viewing session of the exams"
+    },
+    {
+      "weekNumber": 34,
+      "weekStart": "2027-08-23",
+      "weekEnd": "2027-08-27",
+      "semester": "SPR27",
+      "tags": [
+        "lecture-free"
+      ],
+      "comment": "lecture-free period",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 35,
+      "weekStart": "2027-08-30",
+      "weekEnd": "2027-09-03",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 36,
+      "weekStart": "2027-09-06",
+      "weekEnd": "2027-09-10",
+      "semester": "SPR27",
+      "tags": [
+        "teaching"
+      ],
+      "comment": "",
+      "studentNote": ""
+    },
+    {
+      "weekNumber": 37,
+      "weekStart": "2027-09-13",
+      "weekEnd": "2027-09-17",
+      "semester": "SPR27",
+      "tags": [
+        "exam-resit"
+      ],
+      "comment": "resit exam session spring modules*2*",
+      "studentNote": ""
+    }
+  ],
+  "specialDates": [
+    {
+      "date": "2027-03-26",
+      "weekday": "Friday",
+      "type": "holiday",
+      "description": "Easter Friday",
+      "relatedDate": null
+    },
+    {
+      "date": "2027-03-29",
+      "weekday": "Monday",
+      "type": "holiday",
+      "description": "Easter break (extended)",
+      "relatedDate": null
+    },
+    {
+      "date": "2027-03-30",
+      "weekday": "Tuesday",
+      "type": "holiday",
+      "description": "Easter break (extended)",
+      "relatedDate": null
+    },
+    {
+      "date": "2027-03-31",
+      "weekday": "Wednesday",
+      "type": "holiday",
+      "description": "Easter break (extended)",
+      "relatedDate": null
+    },
+    {
+      "date": "2027-05-06",
+      "weekday": "Thursday",
+      "type": "holiday",
+      "description": "Ascension Day",
+      "relatedDate": null
+    },
+    {
+      "date": "2027-05-17",
+      "weekday": "Monday",
+      "type": "holiday",
+      "description": "Pentecost Monday",
+      "relatedDate": "2027-06-07"
+    },
+    {
+      "date": "2027-06-07",
+      "weekday": "Monday",
+      "type": "compensation",
+      "description": "Compensation day for Pentecost Monday (17.05.2027) \u2014 this is itself a normal Monday (week 23), called out by the school as the day Monday-slot modules make up the session lost to the Pentecost holiday.",
+      "relatedDate": "2027-05-17"
+    }
+  ],
+  "legend": {
+    "*1*": "There is no additional exam registration - the registration for the module (confirmed by the Master Office) is also the registration to the regular exam session. The exams are held in written form (120 minutes). The regular exams generally take place on the same day as the lessons have been. Exception: Exams of the context modules normally take place on Friday. Please note: The exam period may vary from the lesson period.",
+    "*2*": "A separate compulsory registration is necessary to attend the resit exam session. Only modules offered on the last regular exam session are available. Resit exams are held either in written (120 minutes) or in oral form (30 minutes) - Students cannot choose! The resit exams generally take place on the same day as the lessons have been.",
+    "general": "Only the holidays / lecture-free days mentioned above are valid. No additional cantonal or municipal holidays will be considered."
+  }
+}
