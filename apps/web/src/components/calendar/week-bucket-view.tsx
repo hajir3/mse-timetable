@@ -10,9 +10,14 @@ import type { Session, WeekTag } from "@mse-timetable/shared";
  * Mirrors the official ZHAW MSE module-selection tool's week view: a fixed
  * weekday x time-of-day grid (Morning/Afternoon/Evening — no clock times),
  * one card per course per day, rather than a real time-proportional grid.
- * There's no "Block" row (the 4th row on the official tool, for intensive
- * block-format courses): nothing in this data is tagged that way — see
- * CLAUDE.md.
+ *
+ * The 4th row ("Block", for intensive block-format courses that don't run
+ * on a fixed weekday) is always empty here: cross-checked every module in
+ * the catalog workbook against the timetable workbook (55/55 AUT modules
+ * match with no leftovers on either side) and there's no "block" mention
+ * anywhere in either file's legends — this region's data genuinely has no
+ * block-format modules. The row is still rendered, for visual parity with
+ * the official tool and in case a future semester's data has some.
  */
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
@@ -118,6 +123,14 @@ export function WeekBucketView({
             })}
           </Fragment>
         ))}
+
+        {/* Always-empty "Block" row — see the file-level comment above.
+            Spans all 5 day columns as one cell, matching the official
+            tool's layout for a row that isn't really per-weekday. */}
+        <div className="flex items-center justify-center bg-background p-2 text-xs font-medium text-muted-foreground">
+          Block
+        </div>
+        <div className="col-span-5 min-h-12 bg-background p-1" />
       </div>
     </div>
   );
