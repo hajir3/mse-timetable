@@ -54,7 +54,11 @@ export function DayAgendaView({
         {sessions.map((s, i) => (
           <div
             key={`${s.moduleCode}-${s.lessonType}-${i}`}
-            className={cn("rounded-md p-3 text-white", classForModuleCode(s.moduleCode))}
+            className={cn(
+              "rounded-md p-3 text-white",
+              s.isProvisional && "border border-dashed border-white/70",
+              classForModuleCode(s.moduleCode),
+            )}
           >
             <div className="text-xs opacity-90">
               {s.start}–{s.end}
@@ -63,6 +67,7 @@ export function DayAgendaView({
             <div className="text-sm">
               {s.mode === "online" ? "Online" : s.room}
               {s.isRoomException && " (room change)"}
+              {s.isProvisional && " · Provisional — exact time not yet published"}
             </div>
           </div>
         ))}

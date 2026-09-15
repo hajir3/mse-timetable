@@ -50,6 +50,7 @@ function CourseCardView({ card, compact }: { card: AggregatedCard; compact: bool
       className={cn(
         "flex flex-1 flex-col justify-center overflow-hidden rounded-sm text-left text-white",
         compact ? "px-1.5 py-1" : "px-2 py-1.5",
+        card.isProvisional && "border border-dashed border-white/70",
         classForModuleCode(card.moduleCode),
       )}
     >
@@ -60,6 +61,7 @@ function CourseCardView({ card, compact }: { card: AggregatedCard; compact: bool
       <div className={cn("opacity-90", compact ? "text-[10px]" : "text-xs")}>
         {card.mode === "online" ? "Online" : card.room}
         {card.hasRoomException && " (room change)"}
+        {card.isProvisional && " · Provisional"}
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ const BANNER_TAGS = new Set<WeekTag>(["holiday", "lecture-free", "exam-regular",
 interface CourseCard {
   moduleCode: string;
   hasRoomException: boolean;
+  isProvisional: boolean;
 }
 
 function aggregateByDay(sessions: Session[]): Map<string, CourseCard[]> {
@@ -34,8 +35,16 @@ function aggregateByDay(sessions: Session[]): Map<string, CourseCard[]> {
       byDate.set(s.date, dayMap);
     }
     const existing = dayMap.get(s.moduleCode);
-    if (existing) existing.hasRoomException = existing.hasRoomException || s.isRoomException;
-    else dayMap.set(s.moduleCode, { moduleCode: s.moduleCode, hasRoomException: s.isRoomException });
+    if (existing) {
+      existing.hasRoomException = existing.hasRoomException || s.isRoomException;
+      existing.isProvisional = existing.isProvisional || s.isProvisional;
+    } else {
+      dayMap.set(s.moduleCode, {
+        moduleCode: s.moduleCode,
+        hasRoomException: s.isRoomException,
+        isProvisional: s.isProvisional,
+      });
+    }
   }
   const result = new Map<string, CourseCard[]>();
   for (const [dateStr, dayMap] of byDate) result.set(dateStr, [...dayMap.values()]);
@@ -113,11 +122,13 @@ export function MonthGridView({
                           key={card.moduleCode}
                           className={cn(
                             "rounded-sm px-1.5 py-1 text-xs font-medium text-white",
+                            card.isProvisional && "border border-dashed border-white/70",
                             classForModuleCode(card.moduleCode),
                           )}
                         >
                           {card.moduleCode}
                           {card.hasRoomException && <span className="block text-[10px] font-normal opacity-90">room change</span>}
+                          {card.isProvisional && <span className="block text-[10px] font-normal opacity-90">provisional</span>}
                         </div>
                       ))}
                     </div>

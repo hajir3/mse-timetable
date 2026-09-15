@@ -96,6 +96,9 @@ export function buildIcsFeed(sessions: Session[], now: Date = new Date()): strin
     if (card.hasRoomException) {
       lines.push("DESCRIPTION:Room change for this session");
     }
+    if (card.isProvisional) {
+      lines.push("DESCRIPTION:Provisional — the school hasn't published exact session times for this semester yet");
+    }
     lines.push("END:VEVENT");
   }
 

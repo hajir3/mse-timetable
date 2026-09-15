@@ -1,16 +1,14 @@
 import raw from "@/data/generated/AY26-27.json";
 import { GeneratedDatasetSchema, type GeneratedDataset } from "@mse-timetable/shared";
 
+export { termForSemesterKey } from "@mse-timetable/shared";
+
 /**
  * The static dataset produced by `packages/data-build` at build time (see
  * CLAUDE.md — "The data-update workflow"). Re-validating it at import time
  * is cheap at this size and catches a stale/corrupt generated file early.
  */
 export const dataset: GeneratedDataset = GeneratedDatasetSchema.parse(raw);
-
-export function termForSemesterKey(semesterKey: string): "AUT" | "SPR" {
-  return semesterKey.startsWith("AUT") ? "AUT" : "SPR";
-}
 
 /** Picks the semester whose date range contains `now`, else the next
  * upcoming one, else the last one in the dataset. */

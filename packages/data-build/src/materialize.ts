@@ -71,6 +71,7 @@ export function materializeSessions(
           room: isRoomException ? t.exception!.room : t.room,
           isRoomException,
           isCompensation: compensationDates.has(date),
+          isProvisional: t.isProvisional,
         });
       }
     });

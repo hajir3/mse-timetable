@@ -13,6 +13,11 @@ export const SEMESTER_TERMS = ["AUT", "SPR"] as const;
 export const SemesterTermSchema = z.enum(SEMESTER_TERMS);
 export type SemesterTerm = z.infer<typeof SemesterTermSchema>;
 
+/** Every semester key in this dataset starts with its term (e.g. "AUT26-27", "SPR27"). */
+export function termForSemesterKey(semesterKey: string): SemesterTerm {
+  return semesterKey.startsWith("AUT") ? "AUT" : "SPR";
+}
+
 export const MODULE_PREFIXES = ["CM", "FTP", "TSM"] as const;
 export const ModulePrefixSchema = z.enum(MODULE_PREFIXES);
 export type ModulePrefix = z.infer<typeof ModulePrefixSchema>;
@@ -99,6 +104,7 @@ export const SessionSchema = z.object({
   room: z.string(),
   isRoomException: z.boolean(), // true if this date used the override venue/room
   isCompensation: z.boolean(), // true if this occurrence was added for a compensation day (see SpecialDate)
+  isProvisional: z.boolean(), // true if approximated from the catalog workbook (see deriveProvisionalTemplates.ts) because the school hasn't published this semester's real timetable yet
 });
 export type Session = z.infer<typeof SessionSchema>;
 

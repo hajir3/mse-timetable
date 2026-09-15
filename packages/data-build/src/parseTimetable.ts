@@ -52,6 +52,7 @@ export interface SessionTemplate {
   venue: string;
   room: string;
   exception: SessionException | null;
+  isProvisional: boolean;
 }
 
 function parseSegments(timeSlot: string, context: string): SessionSegment[] {
@@ -147,7 +148,20 @@ export async function parseTimetable(filePath: string, sheetName: string): Promi
           }
         : null;
 
-    templates.push({ moduleCode, weekday, lessonType, timeOfDay, segments, start, end, mode, venue, room, exception });
+    templates.push({
+      moduleCode,
+      weekday,
+      lessonType,
+      timeOfDay,
+      segments,
+      start,
+      end,
+      mode,
+      venue,
+      room,
+      exception,
+      isProvisional: false,
+    });
   }
 
   return templates;

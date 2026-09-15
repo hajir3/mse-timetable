@@ -162,9 +162,10 @@ and redeploys on every push to `main`, this is the *entire* update mechanism
 - FR1: The static dataset is regenerated automatically on every build,
   driven only by whatever is currently committed under `data/`.
 - FR2: The data build parses a module-catalog workbook, a semester-timetable
-  workbook, and the hand-maintained academic-calendar JSON/CSV (re-keyed
-  once/year from the school's PDF — see §8.3) for a given academic year +
-  semester.
+  workbook per semester (when the school has published one — see §8.11 for
+  the fallback when it hasn't yet), and the hand-maintained
+  academic-calendar JSON/CSV (re-keyed once/year from the school's PDF — see
+  §8.3) for a given academic year.
 - FR3: The data build is deterministic and idempotent — running it twice
   against the same source files produces the same output; there's no
   persisted state to accumulate or duplicate.
@@ -259,7 +260,9 @@ per-user metadata. There are no application-owned database tables in v1.
 - `Session` (materialized: module, concrete date, start/end time, lesson
   type, the source workbook's own morning/afternoon/evening time-of-day
   bucket, actual venue/room for that date — pre-resolved against exceptions
-  and against calendar-week type)
+  and against calendar-week type; `isProvisional` — true when approximated
+  from the catalog workbook because the semester has no published timetable
+  yet, see §8.11)
 
 **Per-user account data (Clerk `unsafeMetadata`):**
 - `selectedModules`: `{ [semesterKey: string]: string[] }` — the only piece
@@ -377,6 +380,27 @@ reviewing it — the simplification is what's recorded below.
     polled — not truly instant, but close enough, and it works identically
     across Google, Outlook, and Apple Calendar today with no vendor-specific
     code.
+11. **A semester with no published timetable yet — approximate from the
+    catalog, don't leave the calendar empty.** The catalog workbook
+    (`*_filter_function.xlsx`) covers the whole academic year, including
+    terms the school hasn't published a real per-session timetable workbook
+    for yet — it just gives each module one generic weekday + a
+    human-readable timeslot label (e.g. "17:10 to 19:45; possibly until
+    20:40"), not real dates, rooms, or a lecture/tutorial split. Rather than
+    make a user wait for that file to show anything at all, `data-build`
+    synthesizes one weekly `Session` per module for any semester missing a
+    `*published*.xlsx` file, using that generic weekday/timeslot (widened to
+    the label's own upper bound, so the block errs toward reserving too much
+    time rather than too little) expanded across the academic calendar's
+    teaching weeks — reusing `materializeSessions` exactly as for real data
+    (`deriveProvisionalTemplates.ts`). Every such `Session` is flagged
+    `isProvisional: true`; the UI renders provisional blocks with a dashed
+    border and a "Provisional" label (catalog page, all three calendar
+    views, and the ICS feed), and the catalog page banners the whole
+    semester as provisional. Once the school publishes that semester's real
+    timetable workbook, dropping it into `data/<year>/` supersedes the
+    approximation automatically (a semester is provisional only when it has
+    *no* published file at all).
 
 ## 9. Decisions made / remaining defaults
 

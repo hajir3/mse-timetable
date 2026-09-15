@@ -12,6 +12,7 @@ export interface AggregatedCard {
   timeOfDay: TimeOfDay;
   moduleCode: string;
   hasRoomException: boolean;
+  isProvisional: boolean;
   start: string;
   end: string;
   room: string;
@@ -25,6 +26,7 @@ export function aggregateByDayAndBucket(sessions: Session[]): Map<string, Aggreg
     const existing = byKey.get(key);
     if (existing) {
       existing.hasRoomException = existing.hasRoomException || s.isRoomException;
+      existing.isProvisional = existing.isProvisional || s.isProvisional;
       if (s.start < existing.start) existing.start = s.start;
       if (s.end > existing.end) existing.end = s.end;
     } else {
@@ -33,6 +35,7 @@ export function aggregateByDayAndBucket(sessions: Session[]): Map<string, Aggreg
         timeOfDay: s.timeOfDay,
         moduleCode: s.moduleCode,
         hasRoomException: s.isRoomException,
+        isProvisional: s.isProvisional,
         start: s.start,
         end: s.end,
         room: s.room,

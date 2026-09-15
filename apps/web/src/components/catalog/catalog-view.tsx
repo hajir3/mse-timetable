@@ -64,6 +64,7 @@ export function CatalogView() {
   const semesterSessions = useMemo(() => dataset.sessions.filter((s) => s.semester === semesterKey), [semesterKey]);
   const conflicts = useMemo(() => findConflicts(localSelection, semesterSessions), [localSelection, semesterSessions]);
   const hasSessions = semesterSessions.length > 0;
+  const isProvisionalSemester = hasSessions && semesterSessions.every((s) => s.isProvisional);
   const savedForSemester = selectedModules[semesterKey] ?? [];
   const dirty = JSON.stringify([...localSelection].sort()) !== JSON.stringify([...savedForSemester].sort());
 
@@ -87,6 +88,13 @@ export function CatalogView() {
         <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
           The school hasn&apos;t published session times for this semester yet — you can still pick modules
           now, and they&apos;ll appear on your calendar once the timetable is imported.
+        </p>
+      )}
+      {isProvisionalSemester && (
+        <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+          The school hasn&apos;t published the final timetable for this semester yet — times below (and on your
+          calendar) are approximated from the module catalog and marked &quot;Provisional&quot;. Rooms and
+          lecture/tutorial splits aren&apos;t available until the real timetable is imported.
         </p>
       )}
 
