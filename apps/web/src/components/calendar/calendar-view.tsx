@@ -30,7 +30,7 @@ export function CalendarView({ subscribeUrl }: { subscribeUrl: string | null }) 
   const semester = dataset.semesters.find((s) => s.key === semesterKey) ?? dataset.semesters[0];
   const selectedCodes = useMemo(() => new Set(selectedModules[semesterKey] ?? []), [selectedModules, semesterKey]);
 
-  const [view, setView] = useState<ViewMode>("month");
+  const [view, setView] = useState<ViewMode>("work_week");
   const [date, setDate] = useState<Date>(() => parseISO(semester.start));
   const [dateInitializedFor, setDateInitializedFor] = useState(semesterKey);
   if (dateInitializedFor !== semesterKey) {
